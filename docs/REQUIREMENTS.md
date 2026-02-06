@@ -110,22 +110,102 @@ De opdrachtgever wil de schoolplaat "De eerste boeren en hun grafheuvelritueel" 
 
 # Projectmanagement
 
-## Projectmanagement
+**Scrumboard:** _GitHub Projects_
 
-\[Invullen: Welke tools worden er ingezet om het project uit te voeren?\]
+**Git repository:** _GitHub_
 
-- Scrumboard:
-- Git repository:
-- …
+**Communicatie:**
 
-## Definition of Done
+- E-mail met opdrachtgever Masja Parlevliet en Janneke Zuyderwyk
+- _Discord voor intern teamoverleg_
 
-\[Invullen: Aan welke overkoepelende kwaliteitseisen voldoen de op te leveren user stories?\]
+**Documentatie:** _Word_
 
-## Definition of Fun
+**Design:** _Figma_
 
-\[Invullen: Welke afspraken maakt het team over de werkwijze?\]
+**Planning:** _Word_
 
-# Vragen en antwoorden
+**Definition of Done**
 
-\[Invullen: Op welke vragen is antwoord nodig voor de start van het project? Welke antwoorden zijn gegeven, welke beslissingen zijn genomen?\]
+Een user story is Done wanneer:
+
+**Functioneel:**
+
+- Alle acceptatiecriteria zijn geïmplementeerd en getest
+- De functionaliteit werkt op alle drie de platforms (web, digibord, activiteitentafel)
+- Touch-interactie werkt correct en responsief
+
+**Technisch:**
+
+- Code is gereviewed door minimaal één teamlid
+- Code voldoet aan de afgesproken coding standards
+- Unit tests zijn geschreven en slagen (indien van toepassing)
+- Er zijn geen kritieke bugs of errors
+- Code is gecommit naar de Git repository met duidelijke commit message
+
+**Kwaliteit:**
+
+- De functionaliteit is getest door minimaal twee teamleden
+- De functionaliteit is getest met een gebruiker uit de doelgroep (indien mogelijk)
+- De interface is gebruiksvriendelijk en intuïtief
+- Teksten zijn gecontroleerd op spelling en grammatica
+- Inhoudelijke correctheid is gevalideerd (eventueel met opdrachtgever)
+
+**Documentatie:**
+
+- Technische documentatie is bijgewerkt
+- Gebruikersinstructies zijn toegevoegd (indien nodig)
+- Wijzigingen zijn gedocumenteerd in de release notes
+
+**Opdrachtgever:**
+
+- Demo is gegeven aan product owner/opdrachtgever (bij relevante stories)
+- Feedback van opdrachtgever is verwerkt
+
+**Definition of Fun**
+
+**Werkafspraken team:**
+
+- We communiceren open en respectvol met elkaar
+- We helpen elkaar bij problemen en vieren successen samen
+- We houden ons aan afgesproken deadlines en sprint commitments
+- Bij verhindering geven we minimaal 24 uur van tevoren door
+- We komen voorbereid naar meetings en standups
+
+**Samenwerking:**
+
+- Daily standup van maximaal 15 minuten aan het begin van elke werkdag
+- Sprint planning aan het begin van elke sprint (tweewekelijks)
+- Sprint review en retrospective aan het einde van elke sprint
+- Pair programming bij complexe functionaliteit
+- Code reviews binnen 24 uur na pull request
+
+**Werkomgeving:**
+
+- We zorgen voor een positieve en gemotiveerde werksfeer
+- Pauzes nemen we samen om team cohesie te bevorderen
+- We spelen regelmatig de applicatie zelf om gemotiveerd te blijven
+- Muziek tijdens programmeren is toegestaan met koptelefoon
+
+**Experimenten en leren:**
+
+- We durven nieuwe technologieën uit te proberen
+- Fouten maken mag, daar leren we van
+- We delen kennis met elkaar (knowledge sharing sessies)
+- We vragen om hulp wanneer we meer dan 30 minuten vastlopen
+
+**Work-life balance:**
+
+- We respecteren elkaars tijd buiten schooluren
+- Overwerk is uitzondering, niet regel
+- We plannen realistisch en communiceren tijdig over capaciteit
+
+**Vragen en antwoorden**
+
+Hoe moet het eruitzien?
+
+Moet het toegankelijk zijn?
+
+Hoeveel pagina's zijn er nodig?
+
+Welke kleurensamenstelling gebruiken we?
