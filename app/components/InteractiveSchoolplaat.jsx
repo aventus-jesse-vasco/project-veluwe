@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Mountain,
   Flame,
@@ -15,10 +15,7 @@ import {
   Map,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
   Lightbulb,
-  BarChart3,
-  Pencil,
   Gamepad2,
   RotateCcw,
 } from "lucide-react";
@@ -756,7 +753,6 @@ function GameSection({ game, color }) {
 export default function InteractiveSchoolplaat() {
   const [active, setActive] = useState(null);
   const [visited, setVisited] = useState(new Set());
-  const [variant, setVariant] = useState("a");
   const selected = HOTSPOTS.find((h) => h.id === active);
 
   function openHotspot(id) { setActive(id); setVisited((v) => new Set([...v, id])); }
@@ -779,14 +775,8 @@ export default function InteractiveSchoolplaat() {
         .header p { color: #8b6240; font-size: 0.84rem; margin: 0; }
         .progress-bar { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 16px; }
         .progress-dots { display: flex; gap: 3px; }
-        .variant-toggle { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .variant-btn { background: rgba(255,255,255,0.07); border: 2px solid #4a2e14; color: #a0856a; padding: 8px 18px; border-radius: 30px; cursor: pointer; font-size: 0.86rem; transition: all 0.25s ease; font-family: inherit; }
-        .variant-btn:hover { background: rgba(255,255,255,0.12); }
-        .variant-btn.active { background: #7B4F2E; border-color: #a0856a; color: #f5d9a8; }
         .main-layout { display: flex; gap: 20px; align-items: flex-start; width: 100%; max-width: 1140px; flex-wrap: wrap; justify-content: center; }
         .schoolplaat-frame { position: relative; flex: 1 1 520px; max-width: 720px; border-radius: 12px; overflow: hidden; box-shadow: 0 16px 60px rgba(0,0,0,0.85); border: 3px solid #5a3218; }
-        .schoolplaat-frame.with-border { padding: 50px; background: #4a2e14; overflow: visible; }
-        .schoolplaat-frame.with-border img { border-radius: 8px; }
         .schoolplaat-img { display: block; width: 100%; height: auto; }
         .poi { position: absolute; width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, rgba(255,149,0,0.45), rgba(255,107,0,0.45)); border: 2px solid rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translate(-50%, -50%); box-shadow: 0 4px 15px rgba(0,0,0,0.35); transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10; animation: poiPulse 2.5s infinite; backdrop-filter: blur(2px); }
         .poi:hover { transform: translate(-50%, -50%) scale(1.2); background: linear-gradient(135deg, rgba(255,149,0,0.75), rgba(255,107,0,0.75)); border-color: rgba(255,255,255,0.85); box-shadow: 0 6px 25px rgba(0,0,0,0.5), 0 0 0 8px rgba(255,149,0,0.2); animation: none; }
@@ -797,14 +787,6 @@ export default function InteractiveSchoolplaat() {
         .poi .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: rgba(0,0,0,0.92); }
         .poi:hover .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
         @keyframes poiPulse { 0%, 100% { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 0 0 rgba(255,149,0,0.5); } 50% { box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 0 8px rgba(255,149,0,0); } }
-        .target-dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #e67e22; border: 2px solid white; transform: translate(-50%, -50%); z-index: 6; box-shadow: 0 2px 8px rgba(0,0,0,0.4); pointer-events: none; }
-        .border-poi { position: absolute; display: flex; align-items: center; gap: 7px; background: rgba(45, 28, 15, 0.96); padding: 7px 12px 7px 8px; border-radius: 22px; cursor: pointer; transition: all 0.25s ease; z-index: 20; border: 2px solid #5a3218; }
-        .border-poi:hover, .border-poi.active { background: #7B4F2E; border-color: #c8a97a; transform: scale(1.05); }
-        .border-poi .icon-wrap { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #ff9500, #ff6b00); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .border-poi.visited .icon-wrap { background: linear-gradient(135deg, #56ab2f, #a8e063); }
-        .border-poi .icon-wrap svg { width: 14px; height: 14px; color: white; }
-        .border-poi .bp-label { font-size: 0.75rem; color: #f5d9a8; white-space: nowrap; }
-        @media (max-width: 700px) { .border-poi .bp-label { display: none; } .schoolplaat-frame.with-border { padding: 35px 8px; } }
         .info-panel { flex: 1 1 290px; max-width: 380px; }
         .info-card { background: rgba(10, 5, 2, 0.94); border-radius: 14px; padding: 20px 18px; color: #f0e0c0; box-shadow: 0 8px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04); animation: fadeSlide 0.22s ease; max-height: 82vh; overflow-y: auto; }
         .info-card::-webkit-scrollbar { width: 4px; } .info-card::-webkit-scrollbar-track { background: transparent; } .info-card::-webkit-scrollbar-thumb { background: #5a3218; border-radius: 2px; }
@@ -812,26 +794,6 @@ export default function InteractiveSchoolplaat() {
         .hotspot-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #ddc99a; border-radius: 6px; padding: 7px 10px; font-size: 0.79rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.18s ease; font-family: inherit; width: 100%; text-align: left; margin-bottom: 4px; }
         .hotspot-btn:hover { background: rgba(255,255,255,0.07); transform: translateX(3px); }
         .hotspot-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-        .comparison-section { margin-top: 40px; padding-top: 30px; border-top: 2px dashed #4a2e14; width: 100%; max-width: 920px; }
-        .comparison-section h2 { text-align: center; color: #f5d9a8; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 700px) { .pros-cons { grid-template-columns: 1fr; } }
-        .pros-cons > div { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 20px; }
-        .pros-cons h4 { margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
-        .pros-cons ul { list-style: none; padding: 0; margin: 0; font-size: 0.86rem; color: #c8a97a; }
-        .pros-cons li { padding: 6px 0 6px 20px; position: relative; }
-        .pros-cons li::before { content: '•'; position: absolute; left: 0; color: #e67e22; font-size: 1.2em; }
-        .names-section { margin-top: 40px; padding-top: 30px; border-top: 2px dashed #4a2e14; width: 100%; max-width: 920px; }
-        .names-section h2 { text-align: center; color: #f5d9a8; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .names-section .intro { text-align: center; color: #a0856a; margin-bottom: 25px; font-size: 0.88rem; }
-        .names-table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.03); border-radius: 12px; overflow: hidden; }
-        .names-table th, .names-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid rgba(107, 66, 38, 0.25); }
-        .names-table th { background: rgba(90, 50, 24, 0.4); color: #f5d9a8; font-weight: 500; font-size: 0.85rem; }
-        .names-table td { color: #c8a97a; font-size: 0.83rem; }
-        .names-table td:nth-child(3) { color: #e67e22; }
-        .names-table td:nth-child(4) { color: #f5d9a8; }
-        .names-table tr:hover { background: rgba(255,255,255,0.04); }
-        .names-table svg { width: 18px; height: 18px; vertical-align: middle; }
         .footer { color: #3a1e0a; font-size: 0.7rem; margin-top: 28px; text-align: center; line-height: 1.8; }
         @keyframes fadeSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         button:hover { filter: brightness(1.1); }
@@ -859,23 +821,9 @@ export default function InteractiveSchoolplaat() {
         <span style={{ color: "#5a3218", fontSize: "0.68rem" }}>{visited.size}/{HOTSPOTS.length} ontdekt</span>
       </div>
 
-      {/* Variant toggle */}
-      <div className="variant-toggle">
-        <button className={`variant-btn ${variant === "a" ? "active" : ""}`} onClick={() => setVariant("a")}>
-          Variant A: Hotspots op de plaat
-        </button>
-        <button className={`variant-btn ${variant === "b" ? "active" : ""}`} onClick={() => setVariant("b")}>
-          Variant B: Hotspots in de rand
-        </button>
-      </div>
-
       {/* Main layout */}
       <div className="main-layout">
-        {variant === "a" ? (
-          <VariantA active={active} visited={visited} openHotspot={openHotspot} />
-        ) : (
-          <VariantB active={active} visited={visited} openHotspot={openHotspot} />
-        )}
+        <VariantA active={active} visited={visited} openHotspot={openHotspot} />
 
         <div className="info-panel">
           {selected ? (
@@ -886,9 +834,6 @@ export default function InteractiveSchoolplaat() {
         </div>
       </div>
 
-      <ComparisonSection />
-      <NamesSection />
-
       <p className="footer">
         Vensters Veluws Verleden · Gemeente Apeldoorn – Vakgroep Cultuur &amp; Erfgoed · 2026<br />
         Contact: M. Parlevliet · J. Zuyderwyk
@@ -897,57 +842,196 @@ export default function InteractiveSchoolplaat() {
   );
 }
 
-// ─── VARIANT A: HOTSPOTS OP DE PLAAT ─────────────────────────────────────────
+// ─── VARIANT A: HOTSPOTS OP DE PLAAT (met zoom & expand) ─────────────────────
 function VariantA({ active, visited, openHotspot }) {
-  return (
-    <div className="schoolplaat-frame">
-      <img src="/Picture1.png" alt="Schoolplaat: De eerste boeren en hun grafheuvelritueel" className="schoolplaat-img" draggable={false} />
-      {HOTSPOTS.map((h) => {
-        const Icon = ICONS[h.id]; const isActive = active === h.id; const isVisited = visited.has(h.id);
-        return (
-          <button key={h.id} className={`poi ${isActive ? "active" : ""} ${isVisited ? "visited" : ""}`}
-            style={{ left: `${h.x}%`, top: `${h.y}%`, "--poi-color": h.color }}
-            onClick={() => openHotspot(h.id)} aria-label={h.label}>
-            <Icon />
-            <span className="tooltip"><Icon size={14} />{h.label}</span>
-          </button>
-        );
-      })}
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [expanded, setExpanded] = useState(false);
+  const dragging = useRef(false);
+  const hasMoved = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const panAtStart = useRef({ x: 0, y: 0 });
+  const [outerEl, setOuterEl] = useState(null);
+
+  // Wheel-to-zoom – must be non-passive to prevent page scroll
+  useEffect(() => {
+    if (!outerEl) return;
+    function onWheel(e) {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      setZoom((z) => {
+        const nz = Math.max(1, Math.min(6, z * factor));
+        if (nz <= 1) setPan({ x: 0, y: 0 });
+        return nz;
+      });
+    }
+    outerEl.addEventListener("wheel", onWheel, { passive: false });
+    return () => outerEl.removeEventListener("wheel", onWheel);
+  }, [outerEl]);
+
+  // Close expanded with Escape
+  useEffect(() => {
+    if (!expanded) return;
+    function onKey(e) { if (e.key === "Escape") setExpanded(false); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
+  function onPointerDown(e) {
+    if (e.button !== 0) return;
+    dragging.current = true;
+    hasMoved.current = false;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    panAtStart.current = { ...pan };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e) {
+    if (!dragging.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved.current = true;
+    setPan({ x: panAtStart.current.x + dx, y: panAtStart.current.y + dy });
+  }
+
+  function onPointerUp() { dragging.current = false; }
+
+  function changeZoom(factor) {
+    setZoom((z) => {
+      const nz = Math.max(1, Math.min(6, z * factor));
+      if (nz <= 1) setPan({ x: 0, y: 0 });
+      return nz;
+    });
+  }
+
+  const zBtnStyle = {
+    background: "rgba(20,10,4,0.85)", border: "1px solid rgba(255,255,255,0.25)",
+    color: "#f5d9a8", width: 34, height: 34, borderRadius: 7, cursor: "pointer",
+    fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center",
+    fontFamily: "inherit", flexShrink: 0,
+  };
+
+  const mapInner = (
+    <div
+      ref={setOuterEl}
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        width: "100%",
+        cursor: zoom > 1 ? "grab" : "default",
+        userSelect: "none",
+        touchAction: "none",
+        borderRadius: expanded ? 10 : 0,
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerUp}
+    >
+      {/* Zoomable layer – hotspots stay correct because they use % positions */}
+      <div style={{
+        position: "relative",
+        transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+        transformOrigin: "top center",
+        willChange: "transform",
+      }}>
+        <img
+          src="/Picture1.png"
+          alt="Schoolplaat: De eerste boeren en hun grafheuvelritueel"
+          className="schoolplaat-img"
+          draggable={false}
+        />
+        {HOTSPOTS.map((h) => {
+          const Icon = ICONS[h.id];
+          return (
+            <button
+              key={h.id}
+              className={`poi ${active === h.id ? "active" : ""} ${visited.has(h.id) ? "visited" : ""}`}
+              style={{ left: `${h.x}%`, top: `${h.y}%`, "--poi-color": h.color }}
+              onClick={(e) => { e.stopPropagation(); if (hasMoved.current) return; openHotspot(h.id); }}
+              aria-label={h.label}
+            >
+              <Icon />
+              <span className="tooltip"><Icon size={14} />{h.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Controls overlay */}
+      <div
+        style={{ position: "absolute", bottom: 10, right: 10, display: "flex", gap: 5, zIndex: 30 }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <button style={zBtnStyle} onClick={() => changeZoom(1.3)} title="Inzoomen">+</button>
+        <button style={zBtnStyle} onClick={() => changeZoom(1 / 1.3)} title="Uitzoomen">−</button>
+        {zoom > 1.05 && (
+          <button style={zBtnStyle} onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} title="Reset">↺</button>
+        )}
+        <button
+          style={{ ...zBtnStyle, width: "auto", padding: "0 10px", fontSize: "0.75rem", gap: 5 }}
+          onClick={() => { setExpanded((e) => !e); setZoom(1); setPan({ x: 0, y: 0 }); }}
+          title={expanded ? "Sluiten" : "Vergroot de kaart"}
+        >
+          {expanded ? "✕ Sluiten" : "⛶ Vergroot"}
+        </button>
+      </div>
+
+      {/* Zoom level badge */}
+      {zoom > 1.05 && (
+        <div style={{
+          position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.65)",
+          color: "#c8a97a", padding: "2px 8px", borderRadius: 4,
+          fontSize: "0.68rem", zIndex: 20, pointerEvents: "none",
+        }}>
+          {Math.round(zoom * 100)}%
+        </div>
+      )}
+
+      {/* Hint when at zoom=1 and not expanded */}
+      {zoom <= 1 && !expanded && (
+        <div style={{
+          position: "absolute", bottom: 10, left: 10, background: "rgba(0,0,0,0.55)",
+          color: "#8b6240", padding: "3px 9px", borderRadius: 4,
+          fontSize: "0.65rem", pointerEvents: "none", zIndex: 20,
+        }}>
+          Scroll of + om in te zoomen · klik ⛶ om te vergroten
+        </div>
+      )}
     </div>
   );
-}
 
-// ─── VARIANT B: HOTSPOTS IN DE RAND ──────────────────────────────────────────
-const BORDER_POS = [
-  { id: 6, pos: { left: "14%", top: "8px", transform: "translateX(-50%)" } },
-  { id: 8, pos: { left: "45%", top: "8px", transform: "translateX(-50%)" } },
-  { id: 10, pos: { left: "78%", top: "8px", transform: "translateX(-50%)" } },
-  { id: 4, pos: { left: "8px", top: "28%", transform: "translateY(-50%)" } },
-  { id: 3, pos: { left: "8px", top: "50%", transform: "translateY(-50%)" } },
-  { id: 7, pos: { left: "8px", top: "72%", transform: "translateY(-50%)" } },
-  { id: 1, pos: { right: "8px", top: "35%", transform: "translateY(-50%)" } },
-  { id: 9, pos: { right: "8px", top: "65%", transform: "translateY(-50%)" } },
-  { id: 5, pos: { left: "30%", bottom: "8px", transform: "translateX(-50%)" } },
-  { id: 2, pos: { left: "62%", bottom: "8px", transform: "translateX(-50%)" } },
-];
+  if (expanded) {
+    return (
+      <>
+        {/* Backdrop */}
+        <div
+          onClick={() => { setExpanded(false); setZoom(1); setPan({ x: 0, y: 0 }); }}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)",
+            zIndex: 998, cursor: "pointer",
+          }}
+        />
+        {/* Expanded frame */}
+        <div style={{
+          position: "fixed", inset: "16px", zIndex: 999,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <div style={{
+            width: "100%", maxWidth: 1100,
+            border: "3px solid #5a3218", borderRadius: 12,
+            boxShadow: "0 20px 80px rgba(0,0,0,0.9)",
+            overflow: "hidden", pointerEvents: "all",
+          }}>
+            {mapInner}
+          </div>
+        </div>
+      </>
+    );
+  }
 
-function VariantB({ active, visited, openHotspot }) {
-  return (
-    <div className="schoolplaat-frame with-border">
-      <img src="/Picture1.png" alt="Schoolplaat: De eerste boeren en hun grafheuvelritueel" className="schoolplaat-img" draggable={false} />
-      {HOTSPOTS.map((h) => <div key={h.id} className="target-dot" style={{ left: `${h.x}%`, top: `${h.y}%` }} />)}
-      {BORDER_POS.map(({ id, pos }) => {
-        const h = HOTSPOTS.find((s) => s.id === id); const Icon = ICONS[id];
-        return (
-          <button key={id} className={`border-poi ${active === id ? "active" : ""} ${visited.has(id) ? "visited" : ""}`}
-            style={pos} onClick={() => openHotspot(id)}>
-            <div className="icon-wrap"><Icon /></div>
-            <span className="bp-label">{h.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <div className="schoolplaat-frame">{mapInner}</div>;
 }
 
 // ─── SELECTED PANEL ───────────────────────────────────────────────────────────
@@ -1023,76 +1107,4 @@ function EmptyState({ visited, openHotspot }) {
   );
 }
 
-// ─── COMPARISON SECTION ───────────────────────────────────────────────────────
-function ComparisonSection() {
-  return (
-    <div className="comparison-section">
-      <h2><BarChart3 size={22} />Vergelijking van beide varianten</h2>
-      <div className="pros-cons">
-        <div>
-          <h4 style={{ color: "#56ab2f" }}><CheckCircle size={16} />Variant A (op de plaat)</h4>
-          <ul>
-            <li>Direct duidelijk waar je moet klikken</li>
-            <li>Intuïtief voor kinderen: "klik op wat je ziet"</li>
-            <li>Minder visuele complexiteit</li>
-            <li>Werkt goed op mobiel en digibord</li>
-            <li>Pulserende animatie trekt aandacht</li>
-            <li>Groen na bezoek = voortgang zichtbaar</li>
-          </ul>
-        </div>
-        <div>
-          <h4 style={{ color: "#3498db" }}><CheckCircle size={16} />Variant B (in de rand)</h4>
-          <ul>
-            <li>Schoolplaat blijft 'schoon' en onverstoord</li>
-            <li>Alle labels direct zichtbaar rondom de plaat</li>
-            <li>Meer ruimte voor langere titels</li>
-            <li>Klassiekere, museale uitstraling</li>
-            <li>Makkelijker alle 10 onderwerpen te overzien</li>
-            <li>Geschikt voor activiteitentafel-gebruik</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ─── NAMES SECTION ────────────────────────────────────────────────────────────
-function NamesSection() {
-  const reasons = {
-    1: "Wekt nieuwsgierigheid: wat ligt er verborgen?",
-    2: "Concreet beeld, mysterieus en spannend",
-    3: "Vraagvorm nodigt uit tot ontdekken",
-    4: "\"Schatten\" spreekt tot de verbeelding",
-    5: "Verrassend: hoe kan dat met stenen?",
-    6: "Simpel, roept de vraag op: waarom mooi?",
-    7: "Zwaarden zijn altijd spannend voor kinderen",
-    8: "Concreter en tastbaarder dan 'het landschap'",
-    9: "Emotionele connectie met dieren",
-    10: "Zachter en minder confronterend geformuleerd",
-  };
-  return (
-    <div className="names-section">
-      <h2><Pencil size={22} />Kindvriendelijke namen voor de hotspots</h2>
-      <p className="intro">Voorstel voor namen die nieuwsgierigheid opwekken bij kinderen van groep 6–8 / klas 1–2</p>
-      <table className="names-table">
-        <thead>
-          <tr><th>#</th><th>Icoon</th><th>Nieuwe naam</th><th>Originele naam</th><th>Waarom dit werkt</th></tr>
-        </thead>
-        <tbody>
-          {HOTSPOTS.map((h) => {
-            const Icon = ICONS[h.id];
-            return (
-              <tr key={h.id}>
-                <td>{h.id}</td>
-                <td><Icon style={{ color: h.color }} /></td>
-                <td>{h.label}</td>
-                <td>{h.original}</td>
-                <td style={{ color: "#a0856a" }}>{reasons[h.id]}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
