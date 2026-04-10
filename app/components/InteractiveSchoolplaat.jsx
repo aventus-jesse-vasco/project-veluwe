@@ -753,9 +753,16 @@ function GameSection({ game, color }) {
 export default function InteractiveSchoolplaat() {
   const [active, setActive] = useState(null);
   const [visited, setVisited] = useState(new Set());
+  const [closeExpanded, setCloseExpanded] = useState(null);
+  const infoPanelRef = useRef(null);
   const selected = HOTSPOTS.find((h) => h.id === active);
 
-  function openHotspot(id) { setActive(id); setVisited((v) => new Set([...v, id])); }
+  function openHotspot(id) {
+    setActive(id);
+    setVisited((v) => new Set([...v, id]));
+    if (closeExpanded) closeExpanded();
+    setTimeout(() => infoPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
+  }
 
   return (
     <div className="schoolplaat-container">
@@ -823,9 +830,9 @@ export default function InteractiveSchoolplaat() {
 
       {/* Main layout */}
       <div className="main-layout">
-        <VariantA active={active} visited={visited} openHotspot={openHotspot} />
+        <VariantA active={active} visited={visited} openHotspot={openHotspot} registerCloseExpanded={setCloseExpanded} />
 
-        <div className="info-panel">
+        <div className="info-panel" ref={infoPanelRef}>
           {selected ? (
             <SelectedPanel key={selected.id} selected={selected} setActive={setActive} openHotspot={openHotspot} />
           ) : (
@@ -843,10 +850,16 @@ export default function InteractiveSchoolplaat() {
 }
 
 // ─── VARIANT A: HOTSPOTS OP DE PLAAT (met zoom & expand) ─────────────────────
-function VariantA({ active, visited, openHotspot }) {
+function VariantA({ active, visited, openHotspot, registerCloseExpanded }) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (registerCloseExpanded) {
+      registerCloseExpanded(() => () => { setExpanded(false); setZoom(1); setPan({ x: 0, y: 0 }); });
+    }
+  }, [registerCloseExpanded]);
   const dragging = useRef(false);
   const hasMoved = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -948,7 +961,8 @@ function VariantA({ active, visited, openHotspot }) {
               key={h.id}
               className={`poi ${active === h.id ? "active" : ""} ${visited.has(h.id) ? "visited" : ""}`}
               style={{ left: `${h.x}%`, top: `${h.y}%`, "--poi-color": h.color }}
-              onClick={(e) => { e.stopPropagation(); if (hasMoved.current) return; openHotspot(h.id); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); openHotspot(h.id); }}
               aria-label={h.label}
             >
               <Icon />
