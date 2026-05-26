@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Mountain,
   Flame,
@@ -18,12 +18,44 @@ import {
   Lightbulb,
   Gamepad2,
   RotateCcw,
+  Eye,
+  EyeOff,
+  Home,
+  Trophy,
+  PlayCircle,
+  Film,
+  Compass,
 } from "lucide-react";
+
+// ─── RECOMMENDED ORDER (per REQUIREMENTS PART2 §3) ────────────────────────────
+// 1. zwaard van Bergsham, 2. grafheuvel, 3. grafrituelen, 4. stoomkuilen,
+// 5. klokbeker, 6. (open), 7. kleding, 8. sieraden, 9. landschap, 10. dieren
+const RECOMMENDED_ORDER = [7, 1, 2, 5, 6, 10, 3, 4, 8, 9];
+
+// ─── DIFFICULTY ───────────────────────────────────────────────────────────────
+const DIFFICULTIES = [
+  { id: "easy", label: "Makkelijk", age: "8-9 jaar", color: "#52b788", multiplier: 1 },
+  { id: "medium", label: "Gemiddeld", age: "10-12 jaar", color: "#d97706", multiplier: 1.5 },
+  { id: "hard", label: "Moeilijk", age: "13-14 jaar", color: "#C0392B", multiplier: 2 },
+];
+
+// ─── IDLE RESET (auto reset after ~2 min inactivity) ──────────────────────────
+const IDLE_MS = 120_000;
+
+// ─── LEADERBOARD HELPERS ──────────────────────────────────────────────────────
+function readLeaderboard() {
+  try { return JSON.parse(localStorage.getItem("veluwe_leaderboard") || "[]"); } catch { return []; }
+}
+function saveLeaderboard(list) {
+  try { localStorage.setItem("veluwe_leaderboard", JSON.stringify(list.slice(0, 20))); } catch {}
+}
 
 // ─── HOTSPOT DATA WITH STORY + GAMES ──────────────────────────────────────────
 const HOTSPOTS = [
   {
     id: 1, label: "Geheimen onder de grond", x: 62, y: 40, color: "#7B4F2E", original: "De grafheuvel",
+    videoUrl: "https://www.youtube.com/watch?v=oH3PgTctaOA",
+    detailed: true,
     info: "In het midden van de schoolplaat zie je een grafheuvel — een opgestapelde heuvel van aarde die werd aangelegd als graf. Op de Veluwe zijn meer dan 5.000 van zulke heuvels te vinden! Ze dateren uit de periode 2500–800 voor Christus. De heuvel was zichtbaar van ver en markeerde de rustplaats van een belangrijk persoon. Rondom de heuvel was soms een greppel gegraven als heilige grens.",
     game: {
       type: "quiz", title: "Test je kennis!",
@@ -36,6 +68,8 @@ const HOTSPOTS = [
   },
   {
     id: 2, label: "Vuur voor de voorouders", x: 54, y: 66, color: "#C0392B", original: "Grafrituelen",
+    videoUrl: "https://www.youtube.com/watch?v=PzhP8jVj6Qw",
+    detailed: true,
     info: "Links op de plaat brandt een groot vuur. Dit hoort bij de grafrituelen. De overledene werd soms verbrand (crematie) of begraven. Rondom het vuur kwamen mensen samen om afscheid te nemen. Er werden offers gebracht: aardewerk, voedsel en waardevolle voorwerpen. Muziek, dans en gezang hoorden waarschijnlijk ook bij de plechtigheid.",
     game: {
       type: "sequence", title: "Zet het ritueel in de goede volgorde!",
@@ -50,6 +84,8 @@ const HOTSPOTS = [
   },
   {
     id: 3, label: "Wat droegen ze?", x: 22, y: 50, color: "#8E44AD", original: "Kleding",
+    videoUrl: "https://www.youtube.com/watch?v=KbeoFCYZ6gA",
+    detailed: true,
     info: "De mensen op de voorgrond dragen typische kleding uit de bronstijd. Kleding werd gemaakt van dierenhuid, wol en geweven plantvezels zoals vlas. De man draagt een mantel van dierenhuid. De vrouw draagt een geweven tuniek. Kleding was niet alleen bescherming — het toonde ook de status van de drager. Rijkere mensen hadden fijner geweven stoffen en versierde randen.",
     game: {
       type: "quiz", title: "Waar of niet waar?",
@@ -62,6 +98,7 @@ const HOTSPOTS = [
   },
   {
     id: 4, label: "Glimmende schatten", x: 14, y: 36, color: "#F9A825", original: "Sieraden",
+    videoUrl: "https://www.youtube.com/watch?v=tMqbB4_KK6w",
     info: "Op de voorgrond zie je mensen met sieraden. Die werden gemaakt van bot, steen, barnsteen en later ook brons en goud. Armbanden, halskettingen, haarspelden en fibulae (mantelspelden) waren populair. Sieraden waren een teken van rijkdom en macht. De mooiste sieraden werden mee begraven in de grafheuvel.",
     game: {
       type: "match", title: "Koppel het sieraad aan het materiaal!",
@@ -75,6 +112,7 @@ const HOTSPOTS = [
   },
   {
     id: 5, label: "Koken met stenen", x: 38, y: 46, color: "#E64A19", original: "Stoomkuilen",
+    videoUrl: "https://www.youtube.com/watch?v=2KE0gCh2znc",
     info: "Midden op de plaat zijn mensen bezig bij een stookkuil — een kuil gevuld met verhitte stenen. Door water over de hete stenen te gieten ontstond stoom, waarmee voedsel gegaard werd. Dit is een van de oudste kooktechnieken ter wereld. Archeologen herkennen stookkuilen als donkere vlekken in de grond vol gebarsten stenen en houtskool.",
     game: {
       type: "steps", title: "Hoe werkt een stookkuil?",
@@ -88,11 +126,13 @@ const HOTSPOTS = [
   },
   {
     id: 6, label: "De mooiste beker", x: 22, y: 20, color: "#6A1B9A", original: "De Veluwse klokbeker",
+    videoUrl: "https://www.youtube.com/watch?v=h0aR3iLnHpY",
     info: "Rechts op de plaat zie je aardewerk — waaronder de beroemde klokbeker. Dit is een bijzonder stuk aardewerk in de vorm van een omgekeerde klok, versierd met ingegraveerde patronen. De klokbeker werd gemaakt door de 'Klokbekercultuur' (2700–2100 v.Chr.) en gevonden over heel Europa. Op de Veluwe zijn meerdere exemplaren opgegraven.",
     game: { type: "decorate", title: "Versier de klokbeker!" }
   },
   {
     id: 7, label: "Een bijzonder zwaard", x: 8, y: 60, color: "#37474F", original: "Het zwaard van Bergsham",
+    videoUrl: "https://www.youtube.com/watch?v=qwfqgHzxXNk",
     info: "Rechts op de plaat staat een man met een bronzen zwaard. Het zwaard van Bergsham is een echt opgegraven bronzen zwaard gevonden op de Veluwe, daterend uit de Midden-Bronstijd (1500–1100 v.Chr.). Zulke zwaarden waren zeldzaam en kostbaar — echte statussymbolen voor krijgers en leiders.",
     game: {
       type: "quiz", title: "Het Zwaard van Bergsham",
@@ -105,11 +145,13 @@ const HOTSPOTS = [
   },
   {
     id: 8, label: "Bos, heide en akkers", x: 50, y: 16, color: "#388E3C", original: "Het landschap",
+    videoUrl: "https://www.youtube.com/watch?v=R-skKfEgmFs",
     info: "Op de achtergrond zie je het typische Veluwse landschap: open zandvlaktes afgewisseld met herfstkleurige bossen. In de prehistorie zag de Veluwe er heel anders uit. De eerste boeren kapten bomen om landbouwgrond te maken. Door overbegrazing en ontbossing ontstonden kale zandvlaktes en later de heidevelden.",
     game: { type: "landscape", title: "Hoe veranderde het landschap?" }
   },
   {
     id: 9, label: "Trouwe vrienden", x: 88, y: 72, color: "#00695C", original: "De dieren",
+    videoUrl: "https://www.youtube.com/watch?v=4Pp19YBkP00",
     info: "Rechtsonder op de plaat zie je een hond — al duizenden jaren de trouwe metgezel van de mens. De eerste boeren op de Veluwe leefden samen met tamme dieren: koeien, schapen, geiten en varkens. Ze jaagden ook op wilde dieren zoals edelherten en everzwijnen. Dieren speelden een grote rol in het dagelijks leven én in rituelen.",
     game: {
       type: "memory", title: "Dieren-memory!",
@@ -125,6 +167,7 @@ const HOTSPOTS = [
   },
   {
     id: 10, label: "Afscheid nemen", x: 78, y: 38, color: "#546E7A", original: "Omgaan met de dood",
+    videoUrl: "https://www.youtube.com/watch?v=6vDpvCmZTM4",
     info: "Voor de eerste boeren was de dood een overgang naar een andere wereld. Ze geloofden dat voorouders bescherming boden aan de levenden. Overledenen werden begraven met hun bezittingen: eten, gereedschap, sieraden en wapens. De grafheuvel bleef een heilige plek. Het eren van voorouders hield de gemeenschap samen.",
     game: {
       type: "burial", title: "Wat leg je mee in het graf?",
@@ -159,12 +202,22 @@ const gBtn = (color, full) => ({
 });
 
 // ─── QUIZ GAME ────────────────────────────────────────────────────────────────
-function QuizGame({ questions, color }) {
+function QuizGame({ questions, color, difficulty, onResult }) {
   const [qIdx, setQIdx] = useState(0);
   const [sel, setSel] = useState(null);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const reported = useRef(false);
+  // Adjust UI hint based on difficulty
+  const showHint = difficulty !== "hard";
   const q = questions[qIdx];
+
+  useEffect(() => {
+    if (done && !reported.current) {
+      reported.current = true;
+      onResult?.({ correct: score, total: questions.length });
+    }
+  }, [done, score, questions.length, onResult]);
 
   function pick(i) {
     if (sel !== null) return;
@@ -175,7 +228,7 @@ function QuizGame({ questions, color }) {
     if (qIdx + 1 >= questions.length) setDone(true);
     else { setQIdx((n) => n + 1); setSel(null); }
   }
-  function reset() { setQIdx(0); setSel(null); setScore(0); setDone(false); }
+  function reset() { setQIdx(0); setSel(null); setScore(0); setDone(false); reported.current = false; }
 
   if (done) {
     const pct = score / questions.length;
@@ -228,7 +281,7 @@ function QuizGame({ questions, color }) {
       </div>
       {sel !== null && (
         <>
-          {q.explanation && (
+          {q.explanation && showHint && (
             <div style={{ marginTop: 8, padding: "8px 10px", background: `${color}18`, borderRadius: 6, fontSize: "0.76rem", color: "#c8a97a", lineHeight: 1.55, display: "flex", gap: 6 }}>
               <Lightbulb size={14} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>{q.explanation}</span>
@@ -244,10 +297,11 @@ function QuizGame({ questions, color }) {
 }
 
 // ─── SEQUENCE GAME ────────────────────────────────────────────────────────────
-function SequenceGame({ steps, color }) {
+function SequenceGame({ steps, color, onResult }) {
   const [shuffled] = useState(() => [...steps].sort(() => Math.random() - 0.5));
   const [clicked, setClicked] = useState([]);
   const [done, setDone] = useState(false);
+  const reported = useRef(false);
   const remaining = shuffled.filter((s) => !clicked.find((c) => c.id === s.id));
 
   function handleClick(step) {
@@ -256,10 +310,17 @@ function SequenceGame({ steps, color }) {
     setClicked(next);
     if (next.length === steps.length) setDone(true);
   }
-  function reset() { setClicked([]); setDone(false); }
+  function reset() { setClicked([]); setDone(false); reported.current = false; }
 
   const score = done ? clicked.filter((s, i) => s.order === i + 1).length : 0;
   const allCorrect = done && score === steps.length;
+
+  useEffect(() => {
+    if (done && !reported.current) {
+      reported.current = true;
+      onResult?.({ correct: score, total: steps.length });
+    }
+  }, [done, score, steps.length, onResult]);
 
   return (
     <div>
@@ -317,12 +378,20 @@ function SequenceGame({ steps, color }) {
 }
 
 // ─── MATCH GAME ───────────────────────────────────────────────────────────────
-function MatchGame({ pairs, color }) {
+function MatchGame({ pairs, color, onResult }) {
   const [shuffledMatches] = useState(() => [...pairs.map((p) => ({ label: p.match, emoji: p.matchEmoji }))].sort(() => Math.random() - 0.5));
   const [selItem, setSelItem] = useState(null);
   const [matched, setMatched] = useState([]);
   const [wrong, setWrong] = useState(null);
+  const reported = useRef(false);
   const done = matched.length === pairs.length;
+
+  useEffect(() => {
+    if (done && !reported.current) {
+      reported.current = true;
+      onResult?.({ correct: pairs.length, total: pairs.length });
+    }
+  }, [done, pairs.length, onResult]);
 
   function clickItem(item) {
     if (done || matched.find((m) => m.item === item)) return;
@@ -340,7 +409,7 @@ function MatchGame({ pairs, color }) {
       setTimeout(() => setWrong(null), 700);
     }
   }
-  function reset() { setSelItem(null); setMatched([]); setWrong(null); }
+  function reset() { setSelItem(null); setMatched([]); setWrong(null); reported.current = false; }
 
   if (done) return (
     <div style={{ textAlign: "center" }}>
@@ -539,9 +608,11 @@ function DecorateGame({ color }) {
 }
 
 // ─── MEMORY GAME ──────────────────────────────────────────────────────────────
-function MemoryGame({ cards, color }) {
+function MemoryGame({ cards, color, difficulty, onResult }) {
+  // On easy reduce pairs to 4, on hard keep all
+  const usedCards = difficulty === "easy" ? cards.slice(0, 4) : cards;
   const [grid] = useState(() => {
-    const doubled = [...cards, ...cards].map((c, i) => ({ ...c, uid: `${c.id}-${i}` }));
+    const doubled = [...usedCards, ...usedCards].map((c, i) => ({ ...c, uid: `${c.id}-${i}` }));
     for (let i = doubled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [doubled[i], doubled[j]] = [doubled[j], doubled[i]]; }
     return doubled;
   });
@@ -549,7 +620,16 @@ function MemoryGame({ cards, color }) {
   const [matched, setMatched] = useState([]);
   const [moves, setMoves] = useState(0);
   const [locked, setLocked] = useState(false);
-  const done = matched.length === cards.length;
+  const reported = useRef(false);
+  const done = matched.length === usedCards.length;
+
+  useEffect(() => {
+    if (done && !reported.current) {
+      reported.current = true;
+      // Score memory by efficiency: perfect = pairs, +1 per extra move counts against you
+      onResult?.({ correct: usedCards.length, total: Math.max(moves, usedCards.length) });
+    }
+  }, [done, moves, usedCards.length, onResult]);
 
   function flip(uid) {
     if (locked || flipped.includes(uid)) return;
@@ -566,13 +646,13 @@ function MemoryGame({ cards, color }) {
       else setTimeout(() => { setFlipped([]); setLocked(false); }, 900);
     }
   }
-  function reset() { setFlipped([]); setMatched([]); setMoves(0); setLocked(false); }
+  function reset() { setFlipped([]); setMatched([]); setMoves(0); setLocked(false); reported.current = false; }
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ color: "#a0856a", fontSize: "0.7rem" }}>Vind alle {cards.length} paren!</span>
-        <span style={{ color: "#a0856a", fontSize: "0.7rem" }}>Beurten: {moves} · Gevonden: {matched.length}/{cards.length}</span>
+        <span style={{ color: "#a0856a", fontSize: "0.7rem" }}>Vind alle {usedCards.length} paren!</span>
+        <span style={{ color: "#a0856a", fontSize: "0.7rem" }}>Beurten: {moves} · Gevonden: {matched.length}/{usedCards.length}</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
         {grid.map((card) => {
@@ -652,9 +732,10 @@ function LandscapeGame({ color }) {
 }
 
 // ─── BURIAL GAME ──────────────────────────────────────────────────────────────
-function BurialGame({ items, description, color }) {
+function BurialGame({ items, description, color, onResult }) {
   const [selected, setSelected] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const reported = useRef(false);
   const MAX = 5;
 
   function toggle(id) {
@@ -662,9 +743,16 @@ function BurialGame({ items, description, color }) {
     if (selected.includes(id)) setSelected(selected.filter((s) => s !== id));
     else if (selected.length < MAX) setSelected([...selected, id]);
   }
-  function reset() { setSelected([]); setSubmitted(false); }
+  function reset() { setSelected([]); setSubmitted(false); reported.current = false; }
 
   const correctCount = submitted ? selected.filter((id) => items.find((it) => it.id === id)?.correct).length : 0;
+
+  useEffect(() => {
+    if (submitted && !reported.current) {
+      reported.current = true;
+      onResult?.({ correct: correctCount, total: MAX });
+    }
+  }, [submitted, correctCount, onResult]);
 
   return (
     <div>
@@ -730,42 +818,237 @@ function BurialGame({ items, description, color }) {
 }
 
 // ─── GAME DISPATCHER ──────────────────────────────────────────────────────────
-function GameSection({ game, color }) {
+function GameSection({ game, color, difficulty, onResult }) {
   if (!game) return null;
   return (
     <div style={{ marginTop: 16, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "14px 14px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#c8a97a", fontSize: "0.7rem", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
         <Gamepad2 size={12} />{game.title || "Mini-spel"}
+        {difficulty && <span style={{ marginLeft: "auto", textTransform: "none", letterSpacing: 0, color: "#8b6240", fontSize: "0.66rem" }}>· {DIFFICULTIES.find((d) => d.id === difficulty)?.label}</span>}
       </div>
-      {game.type === "quiz" && <QuizGame questions={game.questions} color={color} />}
-      {game.type === "sequence" && <SequenceGame steps={game.steps} color={color} />}
-      {game.type === "match" && <MatchGame pairs={game.pairs} color={color} />}
+      {game.type === "quiz" && <QuizGame questions={game.questions} color={color} difficulty={difficulty} onResult={onResult} />}
+      {game.type === "sequence" && <SequenceGame steps={game.steps} color={color} onResult={onResult} />}
+      {game.type === "match" && <MatchGame pairs={game.pairs} color={color} onResult={onResult} />}
       {game.type === "steps" && <StepsGame steps={game.steps} color={color} />}
       {game.type === "decorate" && <DecorateGame color={color} />}
-      {game.type === "memory" && <MemoryGame cards={game.cards} color={color} />}
+      {game.type === "memory" && <MemoryGame cards={game.cards} color={color} difficulty={difficulty} onResult={onResult} />}
       {game.type === "landscape" && <LandscapeGame color={color} />}
-      {game.type === "burial" && <BurialGame items={game.items} description={game.description} color={color} />}
+      {game.type === "burial" && <BurialGame items={game.items} description={game.description} color={color} onResult={onResult} />}
+    </div>
+  );
+}
+
+// ─── CONFETTI BURST ───────────────────────────────────────────────────────────
+// Parent remounts this with `key={trigger}` so the lazy initializer runs once per burst.
+function ConfettiBurst() {
+  const [bits] = useState(() => {
+    const palette = ["#fde2a8", "#d97706", "#92400e", "#C0392B", "#7B4F2E", "#F9A825"];
+    return Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 0.4,
+      duration: 1.4 + Math.random() * 1.4,
+      color: palette[Math.floor(Math.random() * palette.length)],
+      rotation: Math.random() * 360,
+      size: 6 + Math.random() * 6,
+    }));
+  });
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}>
+      <style>{`@keyframes vConfetti { 0%{transform: translateY(-10vh) rotate(0deg); opacity:1;} 100%{transform: translateY(110vh) rotate(720deg); opacity:0;} }`}</style>
+      {bits.map((b) => (
+        <span key={b.id} style={{
+          position: "absolute", top: 0, left: `${b.left}%`,
+          width: b.size, height: b.size * 0.5, background: b.color,
+          transform: `rotate(${b.rotation}deg)`,
+          animation: `vConfetti ${b.duration}s ${b.delay}s ease-in forwards`,
+          borderRadius: 1,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── LEADERBOARD MODAL ────────────────────────────────────────────────────────
+function LeaderboardModal({ open, onClose, score, totals, onSave, boardVersion }) {
+  const [name, setName] = useState("");
+  // Recompute when the modal opens or when boardVersion bumps (after a new save)
+  // boardVersion is intentionally read inside to force recompute on save.
+  const board = useMemo(() => {
+    void boardVersion;
+    if (!open) return [];
+    return readLeaderboard().sort((a, b) => b.score - a.score);
+  }, [open, boardVersion]);
+
+  if (!open) return null;
+  function submit(e) {
+    e?.preventDefault();
+    const trimmed = (name || "Anoniem").trim().slice(0, 18);
+    onSave?.(trimmed);
+    setName("");
+  }
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(0,0,0,0.78)", backdropFilter: "blur(4px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        width: "100%", maxWidth: 440, background: "rgba(20,10,4,0.97)",
+        border: "2px solid #d97706", borderRadius: 14, padding: "22px 20px",
+        color: "#f5d9a8", boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <Trophy size={20} style={{ color: "#d97706" }} />
+          <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#fde2a8" }}>Klassement</h2>
+          <button onClick={onClose} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#c8a97a", borderRadius: "50%", width: 28, height: 28, cursor: "pointer" }}>✕</button>
+        </div>
+        {score != null && (
+          <form onSubmit={submit} style={{ marginBottom: 16, padding: "10px 12px", background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.4)", borderRadius: 10 }}>
+            <div style={{ fontSize: "0.8rem", marginBottom: 6, color: "#fde2a8" }}>Jouw score: <strong>{score}</strong> punten · {totals?.correct}/{totals?.total} goed</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jouw naam" maxLength={18} style={{
+                flex: 1, padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(0,0,0,0.4)", color: "#fde2a8", fontSize: "0.85rem", fontFamily: "inherit",
+              }} />
+              <button type="submit" style={{ background: "linear-gradient(135deg,#d97706,#92400e)", border: "none", color: "#fff", padding: "7px 14px", borderRadius: 6, cursor: "pointer", fontSize: "0.82rem", fontWeight: 700, fontFamily: "inherit" }}>Opslaan</button>
+            </div>
+          </form>
+        )}
+        <div style={{ maxHeight: 320, overflowY: "auto" }}>
+          {board.length === 0 ? (
+            <div style={{ color: "#8b6240", textAlign: "center", padding: "20px 0", fontSize: "0.85rem" }}>Nog geen scores. Wees de eerste!</div>
+          ) : board.map((row, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "8px 10px", marginBottom: 4,
+              background: i === 0 ? "rgba(217,119,6,0.16)" : "rgba(255,255,255,0.03)",
+              border: i === 0 ? "1px solid rgba(217,119,6,0.5)" : "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 7,
+            }}>
+              <span style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: i < 3 ? "#d97706" : "rgba(255,255,255,0.08)", fontSize: "0.7rem", fontWeight: 700, color: "#fff" }}>{i + 1}</span>
+              <span style={{ flex: 1, fontSize: "0.84rem" }}>{row.name}</span>
+              <span style={{ color: "#c8a97a", fontSize: "0.7rem" }}>{row.difficulty}</span>
+              <span style={{ color: "#fde2a8", fontWeight: 700, fontSize: "0.88rem" }}>{row.score}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function InteractiveSchoolplaat() {
+export default function InteractiveSchoolplaat({ onBack }) {
   const [active, setActive] = useState(null);
   const [visited, setVisited] = useState(new Set());
   const [closeExpanded, setCloseExpanded] = useState(null);
+  const [poiVisible, setPoiVisible] = useState(true);
+  const [difficulty, setDifficulty] = useState("medium");
+  const [score, setScore] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [attempted, setAttempted] = useState(0);
+  const [showBoard, setShowBoard] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [boardVersion, setBoardVersion] = useState(0);
+  const [splash, setSplash] = useState(true);
   const infoPanelRef = useRef(null);
+  const idleTimer = useRef(null);
   const selected = HOTSPOTS.find((h) => h.id === active);
+  const diff = DIFFICULTIES.find((d) => d.id === difficulty);
+
+  // Suggested next POI based on REQUIREMENTS PART2 §3
+  const suggestedNextId = RECOMMENDED_ORDER.find((id) => !visited.has(id));
+  const suggestedNext = HOTSPOTS.find((h) => h.id === suggestedNextId);
+
+  // Idle auto-reset
+  const resetAll = useCallback(() => {
+    setActive(null); setVisited(new Set()); setScore(0); setCorrect(0); setAttempted(0); setPoiVisible(true);
+    if (closeExpanded) closeExpanded();
+  }, [closeExpanded]);
+
+  const armIdle = useCallback(() => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => { resetAll(); }, IDLE_MS);
+  }, [resetAll]);
+
+  useEffect(() => {
+    armIdle();
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, armIdle, { passive: true }));
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, armIdle));
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [armIdle]);
+
+  // Splash dismiss
+  useEffect(() => { const t = setTimeout(() => setSplash(false), 1600); return () => clearTimeout(t); }, []);
 
   function openHotspot(id) {
     setActive(id);
-    setVisited((v) => new Set([...v, id]));
+    setVisited((v) => {
+      const nv = new Set([...v, id]);
+      // Trigger confetti the moment the last POI gets visited
+      if (nv.size === HOTSPOTS.length && v.size < HOTSPOTS.length) {
+        queueMicrotask(() => setConfettiKey((k) => k + 1));
+      }
+      return nv;
+    });
     if (closeExpanded) closeExpanded();
     setTimeout(() => infoPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
   }
 
+  // Game result callback for scoring
+  const onGameResult = useCallback((result) => {
+    // result = { correct, total }
+    const earned = Math.round(result.correct * 100 * (diff?.multiplier || 1));
+    setScore((s) => s + earned);
+    setCorrect((c) => c + result.correct);
+    setAttempted((a) => a + result.total);
+    if (result.correct === result.total && result.total > 0) {
+      setConfettiKey((k) => k + 1);
+    }
+  }, [diff]);
+
+  function handleSaveScore(name) {
+    const list = readLeaderboard();
+    list.push({ name, score, difficulty: diff?.label || difficulty, correct, total: attempted, at: Date.now() });
+    saveLeaderboard(list.sort((a, b) => b.score - a.score));
+    setBoardVersion((v) => v + 1);
+    setShowBoard(false);
+  }
+
+
   return (
     <div className="schoolplaat-container">
+      {confettiKey > 0 && <ConfettiBurst key={confettiKey} />}
+      {splash && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9998,
+          background: "linear-gradient(160deg,#1e0f05,#2c1a0e,#3a2010)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          animation: "splashOut 0.5s 1.1s forwards",
+        }}>
+          <div style={{ textAlign: "center", animation: "splashIn 0.6s ease" }}>
+            <div style={{ fontSize: "3.2rem", marginBottom: 10 }}>⚱️</div>
+            <div style={{ color: "#fde2a8", fontSize: "1.2rem", fontFamily: "var(--font-playfair,serif)", fontWeight: 700, marginBottom: 4 }}>De Eerste Boeren</div>
+            <div style={{ color: "#c8a97a", fontSize: "0.78rem", letterSpacing: 3, textTransform: "uppercase" }}>en hun grafheuvelritueel</div>
+          </div>
+        </div>
+      )}
+      <LeaderboardModal
+        open={showBoard}
+        onClose={() => setShowBoard(false)}
+        score={attempted > 0 ? score : null}
+        totals={{ correct, total: attempted }}
+        onSave={handleSaveScore}
+        boardVersion={boardVersion}
+      />
+      <style>{`
+        @keyframes splashIn { from { opacity: 0; transform: scale(0.94); } to { opacity:1; transform: scale(1);} }
+        @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+      `}</style>
       <style>{`
         .schoolplaat-container {
           min-height: 100vh;
@@ -804,7 +1087,56 @@ export default function InteractiveSchoolplaat() {
         .footer { color: #3a1e0a; font-size: 0.7rem; margin-top: 28px; text-align: center; line-height: 1.8; }
         @keyframes fadeSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         button:hover { filter: brightness(1.1); }
+
+        /* Top bar */
+        .top-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 10px; background: rgba(10,5,2,0.6); border: 1px solid rgba(217,119,6,0.25); border-radius: 12px; max-width: 1140px; width: 100%; }
+        .top-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; background: rgba(217,119,6,0.12); border: 1px solid rgba(217,119,6,0.35); color: #fde2a8; font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.18s; }
+        .top-btn:hover { background: rgba(217,119,6,0.22); border-color: #d97706; }
+        .top-difficulty { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.35); padding: 4px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.08); }
+        .diff-btn { display: inline-flex; flex-direction: column; align-items: center; gap: 0; padding: 5px 10px; border-radius: 6px; background: transparent; border: 1px solid transparent; color: #a0856a; font-family: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; transition: all 0.18s; line-height: 1.1; }
+        .diff-btn .diff-age { font-size: 0.58rem; font-weight: 500; color: #6b4226; margin-top: 1px; letter-spacing: 0.5px; }
+        .diff-btn.active { background: color-mix(in srgb, var(--diff-c) 18%, transparent); color: #fde2a8; border-color: var(--diff-c); }
+        .diff-btn.active .diff-age { color: #c8a97a; }
+        .top-score { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; background: linear-gradient(135deg, rgba(217,119,6,0.16), rgba(146,64,14,0.16)); border: 1px solid rgba(217,119,6,0.4); color: #fde2a8; font-size: 0.78rem; cursor: pointer; transition: all 0.2s; }
+        .top-score:hover { transform: scale(1.03); }
+
+        /* Suggested next */
+        .suggested-next { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px; padding: 7px 14px; border-radius: 999px; background: rgba(217,119,6,0.10); border: 1px dashed rgba(217,119,6,0.55); color: #fde2a8; font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .suggested-next:hover { background: rgba(217,119,6,0.18); border-style: solid; }
+        .suggested-next svg { color: #d97706; }
+
+        @media (max-width: 640px) {
+          .top-score { margin-left: 0; width: 100%; justify-content: center; }
+        }
       `}</style>
+
+      {/* ── TOP BAR ── */}
+      <div className="top-bar">
+        {onBack && (
+          <button className="top-btn" onClick={onBack} title="Terug naar overzicht">
+            <Home size={14} /> Overzicht
+          </button>
+        )}
+        <button className="top-btn" onClick={() => setPoiVisible((v) => !v)} title="POI's tonen/verbergen">
+          {poiVisible ? <Eye size={14} /> : <EyeOff size={14} />} {poiVisible ? "Verberg POI's" : "Toon POI's"}
+        </button>
+        <div className="top-difficulty" role="radiogroup" aria-label="Moeilijkheidsgraad">
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => setDifficulty(d.id)}
+              className={`diff-btn ${difficulty === d.id ? "active" : ""}`}
+              style={{ "--diff-c": d.color }}
+              title={d.age}
+              role="radio"
+              aria-checked={difficulty === d.id}
+            >{d.label}<span className="diff-age">{d.age}</span></button>
+          ))}
+        </div>
+        <div className="top-score" onClick={() => setShowBoard(true)} title="Bekijk klassement">
+          <Trophy size={14} /><strong>{score}</strong> pt · {correct}/{attempted}
+        </div>
+      </div>
 
       {/* ── HEADER ── */}
       <div className="header">
@@ -812,6 +1144,20 @@ export default function InteractiveSchoolplaat() {
         <h1><Map size={26} />De Eerste Boeren en hun Grafheuvelritueel</h1>
         <p>Klik op een hotspot om het verhaal te ontdekken en een mini-spel te spelen</p>
       </div>
+
+      {/* Suggested next */}
+      {suggestedNext && (
+        <button
+          className="suggested-next"
+          onClick={() => openHotspot(suggestedNext.id)}
+          title="Volg de aanbevolen verhaalvolgorde"
+        >
+          <Compass size={14} />
+          <span style={{ color: "#c8a97a" }}>Aanbevolen volgende:</span>
+          <strong>{suggestedNext.original}</strong>
+          <ChevronRight size={14} />
+        </button>
+      )}
 
       {/* Progress dots */}
       <div className="progress-bar">
@@ -830,11 +1176,24 @@ export default function InteractiveSchoolplaat() {
 
       {/* Main layout */}
       <div className="main-layout">
-        <VariantA active={active} visited={visited} openHotspot={openHotspot} registerCloseExpanded={setCloseExpanded} />
+        <VariantA
+          active={active}
+          visited={visited}
+          openHotspot={openHotspot}
+          registerCloseExpanded={setCloseExpanded}
+          poiVisible={poiVisible}
+        />
 
         <div className="info-panel" ref={infoPanelRef}>
           {selected ? (
-            <SelectedPanel key={selected.id} selected={selected} setActive={setActive} openHotspot={openHotspot} />
+            <SelectedPanel
+              key={selected.id}
+              selected={selected}
+              setActive={setActive}
+              openHotspot={openHotspot}
+              difficulty={difficulty}
+              onGameResult={onGameResult}
+            />
           ) : (
             <EmptyState visited={visited} openHotspot={openHotspot} />
           )}
@@ -850,10 +1209,14 @@ export default function InteractiveSchoolplaat() {
 }
 
 // ─── VARIANT A: HOTSPOTS OP DE PLAAT (met zoom & expand) ─────────────────────
-function VariantA({ active, visited, openHotspot, registerCloseExpanded }) {
+function VariantA({ active, visited, openHotspot, registerCloseExpanded, poiVisible = true }) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [expanded, setExpanded] = useState(false);
+
+  // Auto-hide POIs while zoomed in (per requirement: tijdens zoom POI's verbergen)
+  const hideForZoom = zoom > 1.4;
+  const showPois = poiVisible && !hideForZoom;
 
   useEffect(() => {
     if (registerCloseExpanded) {
@@ -954,7 +1317,7 @@ function VariantA({ active, visited, openHotspot, registerCloseExpanded }) {
           className="schoolplaat-img"
           draggable={false}
         />
-        {HOTSPOTS.map((h) => {
+        {showPois && HOTSPOTS.map((h) => {
           const Icon = ICONS[h.id];
           return (
             <button
@@ -1049,16 +1412,21 @@ function VariantA({ active, visited, openHotspot, registerCloseExpanded }) {
 }
 
 // ─── SELECTED PANEL ───────────────────────────────────────────────────────────
-function SelectedPanel({ selected, setActive, openHotspot }) {
+function SelectedPanel({ selected, setActive, openHotspot, difficulty, onGameResult }) {
   const Icon = ICONS[selected.id];
-  const next = HOTSPOTS.find((h) => h.id === selected.id + 1);
+  // Suggest the next POI in the recommended order
+  const recIdx = RECOMMENDED_ORDER.indexOf(selected.id);
+  const nextRecId = recIdx >= 0 ? RECOMMENDED_ORDER[recIdx + 1] : null;
+  const next = HOTSPOTS.find((h) => h.id === nextRecId) || HOTSPOTS.find((h) => h.id === selected.id + 1);
   return (
     <div className="info-card" style={{ border: `2px solid ${selected.color}` }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <Icon size={28} style={{ color: selected.color, flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
-          <div style={{ color: "#5a3218", fontSize: "0.65rem", letterSpacing: 2, textTransform: "uppercase" }}>Verhaallijn {selected.id} van 10</div>
+          <div style={{ color: "#5a3218", fontSize: "0.65rem", letterSpacing: 2, textTransform: "uppercase" }}>
+            Verhaallijn {selected.id} van 10 {selected.detailed && <span style={{ color: selected.color, marginLeft: 4 }}>· Uitgewerkt</span>}
+          </div>
           <h2 style={{ margin: 0, fontSize: "0.98rem", color: "#f5d9a8", lineHeight: 1.2 }}>{selected.label}</h2>
           <div style={{ color: "#6b4226", fontSize: "0.68rem" }}>{selected.original}</div>
         </div>
@@ -1068,10 +1436,25 @@ function SelectedPanel({ selected, setActive, openHotspot }) {
       <div style={{ height: 1.5, background: selected.color, marginBottom: 12, borderRadius: 2, opacity: 0.5 }} />
 
       {/* Story */}
-      <p style={{ margin: "0 0 2px", lineHeight: 1.75, fontSize: "0.84rem", color: "#e0cda8" }}>{selected.info}</p>
+      <p style={{ margin: "0 0 10px", lineHeight: 1.75, fontSize: "0.84rem", color: "#e0cda8" }}>{selected.info}</p>
+
+      {/* Detailed storyline (3 fully developed: grafheuvel, grafrituelen, kleding) */}
+      {selected.detailed && <DetailedStory id={selected.id} color={selected.color} />}
+
+      {/* Video link */}
+      {selected.videoUrl && (
+        <a href={selected.videoUrl} target="_blank" rel="noreferrer" style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          marginTop: 6, padding: "7px 12px", borderRadius: 8,
+          background: `${selected.color}22`, border: `1px solid ${selected.color}66`,
+          color: "#fde2a8", textDecoration: "none", fontSize: "0.8rem", fontWeight: 600,
+        }}>
+          <Film size={14} /> Bekijk het filmpje
+        </a>
+      )}
 
       {/* Game */}
-      <GameSection game={selected.game} color={selected.color} />
+      <GameSection game={selected.game} color={selected.color} difficulty={difficulty} onResult={onGameResult} />
 
       {/* Navigation */}
       <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
@@ -1080,9 +1463,94 @@ function SelectedPanel({ selected, setActive, openHotspot }) {
         </button>
         {next && (
           <button onClick={() => openHotspot(next.id)} style={{ flex: 1, background: `${selected.color}22`, border: `1px solid ${selected.color}66`, color: "#f5d9a8", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, fontFamily: "inherit" }}>
-            {next.label} <ChevronRight size={14} />
+            {next.original} <ChevronRight size={14} />
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── DETAILED STORY (3 uitgewerkte verhaallijnen) ─────────────────────────────
+const DETAILED_STORIES = {
+  1: {
+    title: "Hoe wordt een grafheuvel gebouwd?",
+    frames: [
+      { icon: "🏞️", title: "Een belangrijke plek", text: "De plek wordt zorgvuldig gekozen — vaak hoog in het landschap, zichtbaar van ver." },
+      { icon: "⚱️", title: "De begrafenis", text: "Het lichaam wordt in een kuil of houten kist geplaatst, samen met grafgiften zoals aardewerk en sieraden." },
+      { icon: "🌾", title: "Plaggen stapelen", text: "Familie en gemeenschap stapelen heideplaggen en zand op tot een ronde heuvel — soms wel meters hoog." },
+      { icon: "🌀", title: "De heilige greppel", text: "Een ronde greppel wordt gegraven rondom de heuvel: de scheiding tussen de wereld van de levenden en de doden." },
+      { icon: "🕯️", title: "Eeuwig zichtbaar", text: "De heuvel blijft eeuwen staan. Op de Veluwe staan er nog steeds duizenden — soms zichtbaar in het bos!" },
+    ],
+  },
+  2: {
+    title: "Het grafritueel stap voor stap",
+    frames: [
+      { icon: "🫂", title: "Samenkomen", text: "De gemeenschap verzamelt bij de overledene. Verdriet én eer worden samen gedeeld." },
+      { icon: "🌿", title: "Voorbereiden", text: "Het lichaam wordt gewassen, gezalfd en versierd met de mooiste sieraden." },
+      { icon: "🎁", title: "Grafgiften", text: "Aardewerk met eten en drinken, gereedschap en wapens worden klaargezet — uitrusting voor de reis." },
+      { icon: "🔥", title: "Het vuur", text: "Bij crematie wordt een groot vuur ontstoken. Bij begraving brandt een offervuur naast het graf." },
+      { icon: "🥁", title: "Muziek en dans", text: "Trommels, gezangen en dans begeleiden het afscheid — een ritueel dat soms dagen duurt." },
+      { icon: "⛰️", title: "De heuvel opwerpen", text: "Tot slot wordt de grafheuvel opgeworpen — een blijvend monument voor de voorouder." },
+    ],
+  },
+  3: {
+    title: "Hoe maakten zij hun kleding?",
+    frames: [
+      { icon: "🐑", title: "Wol verzamelen", text: "Schapen worden geschoren. De ruwe wol wordt schoongemaakt en gekamd." },
+      { icon: "🌾", title: "Vlas oogsten", text: "Vlasstengels worden geweekt en geklopt — daaruit komen de fijne vezels voor linnen." },
+      { icon: "🧵", title: "Spinnen", text: "Met een spinklos draaien vezels tot stevige draden — uren werk per spoel." },
+      { icon: "🪡", title: "Weven", text: "Op een houten weefgetouw worden draden gekruist tot stof. Patronen ontstaan met verschillende kleuren." },
+      { icon: "🎨", title: "Verven", text: "Planten zoals meekrap (rood), wede (blauw) en walnoten (bruin) geven kleur." },
+      { icon: "👗", title: "Naaien & dragen", text: "Stoffen worden tot tunieken, mantels en gordels gemaakt — versierd met bot- of bronzen spelden." },
+    ],
+  },
+};
+
+function DetailedStory({ id, color }) {
+  const story = DETAILED_STORIES[id];
+  const [frame, setFrame] = useState(0);
+  if (!story) return null;
+  const f = story.frames[frame];
+  return (
+    <div style={{
+      marginBottom: 12, padding: "12px 12px 10px",
+      background: `linear-gradient(135deg, ${color}18, ${color}08)`,
+      border: `1px solid ${color}55`, borderRadius: 10,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#fde2a8", fontSize: "0.7rem", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+        <PlayCircle size={13} /> {story.title}
+      </div>
+      <div style={{ display: "flex", gap: 3, marginBottom: 10 }}>
+        {story.frames.map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= frame ? color : "rgba(255,255,255,0.12)", transition: "background 0.3s" }} />
+        ))}
+      </div>
+      <div style={{ textAlign: "center", padding: "6px 0" }}>
+        <div style={{ fontSize: "2.2rem", marginBottom: 4 }}>{f.icon}</div>
+        <div style={{ color: "#fde2a8", fontSize: "0.86rem", fontWeight: 700, marginBottom: 4 }}>{f.title}</div>
+        <div style={{ color: "#c8a97a", fontSize: "0.78rem", lineHeight: 1.55 }}>{f.text}</div>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+        <button
+          onClick={() => setFrame((n) => Math.max(0, n - 1))}
+          disabled={frame === 0}
+          style={{
+            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+            color: "#c8a97a", borderRadius: 6, padding: "5px 10px", fontSize: "0.74rem",
+            cursor: frame === 0 ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: frame === 0 ? 0.4 : 1,
+          }}
+        ><ChevronLeft size={12} /></button>
+        <button
+          onClick={() => setFrame((n) => Math.min(story.frames.length - 1, n + 1))}
+          disabled={frame === story.frames.length - 1}
+          style={{
+            flex: 1, background: `${color}33`, border: `1px solid ${color}88`,
+            color: "#fde2a8", borderRadius: 6, padding: "5px 10px", fontSize: "0.74rem",
+            cursor: frame === story.frames.length - 1 ? "default" : "pointer", fontFamily: "inherit",
+            opacity: frame === story.frames.length - 1 ? 0.6 : 1, fontWeight: 600,
+          }}
+        >{frame === story.frames.length - 1 ? "✓ Klaar" : "Volgende stap →"}</button>
       </div>
     </div>
   );
