@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const fredoka = Fredoka({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const nunito = Nunito({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "De Veluwe – Hart van de Nederlandse Natuur",
+  title: "Vensters Veluws Verleden – Ontdek de Veluwe!",
   description:
-    "Ontdek de betoverende Veluwe: uitgestrekte bossen, heidevelden, wilde dieren en rijke cultuur. Plan jouw perfecte uitje in het grootste natuurgebied van Nederland.",
+    "Speel, leer en ontdek het verhaal van de Veluwe. Acht schoolplaten vol avonturen voor jonge ontdekkers.",
 };
 
 export default function RootLayout({
@@ -26,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl">
-      <body className={`${playfair.variable} ${inter.variable} antialiased`}>
+      <body className={`${fredoka.variable} ${nunito.variable} antialiased`}>
         {children}
       </body>
     </html>

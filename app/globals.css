@@ -1,48 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
+  --background: #ffd089;
+  --foreground: #2d1605;
 
-  --font-playfair: "Playfair Display", serif;
-  --font-inter: "Inter", sans-serif;
+  --font-display: "Fredoka", "Nunito", sans-serif;
+  --font-body: "Nunito", "Segoe UI", sans-serif;
 
-  /* Veluwe nature palette */
-  --forest-950: #0a1f0e;
-  --forest-900: #132b18;
-  --forest-800: #1a4726;
-  --forest-700: #1e5c30;
-  --forest-600: #2d6a4f;
-  --forest-500: #40916c;
-  --forest-400: #52b788;
-  --forest-300: #74c69d;
-  --forest-200: #95d5b2;
-  --forest-100: #b7e4c7;
-  --forest-50: #d8f3dc;
-
-  --heather-600: #7c3aed;
-  --heather-400: #a78bfa;
-  --heather-200: #ddd6fe;
-
-  --sand-700: #92400e;
-  --sand-500: #d97706;
-  --sand-300: #fcd34d;
-  --sand-100: #fef3c7;
+  --paper:   #fff5e0;
+  --ink:     #2d1605;
+  --primary: #e63946;
+  --orange:  #fb8500;
+  --yellow:  #ffb703;
+  --green:   #06d6a0;
+  --purple:  #7c3aed;
+  --blue:    #4cc9f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
-html {
-  scroll-behavior: smooth;
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
 }
+
+html { scroll-behavior: smooth; }
