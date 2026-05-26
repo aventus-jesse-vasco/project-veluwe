@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Home, Star, Check, X, RotateCcw, Trophy, Flame } from "lucide-react";
+import { Home, Star, Check, ArrowLeft, RotateCcw, Trophy, Flame } from "lucide-react";
 
 const IDLE_MS = 120_000;
 const STAR_SCORE = { 1: 50, 2: 100, 3: 150 };
@@ -444,15 +444,20 @@ function GameOverlay({ poi, onDone, onClose }) {
         }
         @keyframes overlayIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
         .ov-close {
-          position: absolute; top: 20px; right: 20px; z-index: 5;
-          background: #fff; color: #2d1605;
-          width: 64px; height: 64px; border-radius: 50%;
-          display: grid; place-items: center;
+          position: absolute; top: 20px; left: 20px; z-index: 10;
+          background: #e63946; color: #fff;
+          padding: 14px 22px 14px 16px; border-radius: 999px;
+          display: inline-flex; align-items: center; gap: 8px;
+          font-family: var(--font-display); font-weight: 700;
+          font-size: 1.05rem;
           box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 14px 28px rgba(0,0,0,0.4);
           transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
         }
-        .ov-close:hover { transform: scale(1.06) rotate(8deg); }
-        .ov-close:active { transform: scale(0.9); }
+        .ov-close:hover { transform: translateY(-2px); }
+        .ov-close:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,0.3), 0 8px 14px rgba(0,0,0,0.4); }
+        @media (max-width: 540px) {
+          .ov-close { padding: 12px 18px 12px 14px; font-size: 0.95rem; }
+        }
         .ov-head { text-align: center; padding: 28px 20px 22px; }
         .ov-emoji {
           font-size: clamp(4rem, 9vw, 6.5rem);
@@ -491,8 +496,9 @@ function GameOverlay({ poi, onDone, onClose }) {
         @keyframes stampIn { 0% { transform: translate(-50%, -50%) scale(0) rotate(-20deg); } 60% { transform: translate(-50%, -50%) scale(1.15) rotate(-4deg); } 100% { transform: translate(-50%, -50%) scale(1) rotate(-6deg); } }
       `}</style>
 
-      <button className="ov-close" onClick={onClose} aria-label="Sluiten">
-        <X size={32} strokeWidth={3} />
+      <button className="ov-close" onClick={onClose} aria-label="Terug naar plaat">
+        <ArrowLeft size={22} strokeWidth={3} />
+        <span>Terug</span>
       </button>
 
       <div className="ov-head">
