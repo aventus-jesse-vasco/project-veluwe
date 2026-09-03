@@ -1,12 +1,56 @@
 @import "tailwindcss";
 
+:root {
+  --background: #ffd089;
+  --foreground: #2d1605;
+
+  --font-display: "Fredoka", "Nunito", sans-serif;
+  --font-body: "Nunito", "Segoe UI", sans-serif;
+
+  --paper:   #fff5e0;
+  --ink:     #2d1605;
+  --primary: #e63946;
+  --orange:  #fb8500;
+  --yellow:  #ffb703;
+  --green:   #06d6a0;
+  --purple:  #7c3aed;
+  --blue:    #4cc9f0;
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
   /* Breedte van het verhaallijnen-menu naast de schoolplaat */
   --spacing-88: 22rem;
 }
 
-body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
+
+body {
+  background: var(--background);
+  color: var(--ink);
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+html { scroll-behavior: smooth; }

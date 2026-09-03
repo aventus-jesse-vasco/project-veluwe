@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fredoka = Fredoka({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const nunito = Nunito({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Vensters Veluws Verleden – Interactieve schoolplaten",
+  title: "Vensters Veluws Verleden – Ontdek de Veluwe!",
   description:
-    "Acht schoolplaten over de archeologie en geschiedenis van de Veluwe, interactief te verkennen. Gemeente Apeldoorn – Vakgroep Cultuur & Erfgoed.",
+    "Speel, leer en ontdek het verhaal van de Veluwe. Acht schoolplaten vol avonturen voor jonge ontdekkers.",
 };
 
 export default function RootLayout({
@@ -25,9 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${fredoka.variable} ${nunito.variable} antialiased`}>
         {children}
       </body>
     </html>
