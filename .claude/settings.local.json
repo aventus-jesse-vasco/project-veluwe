@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"require\\('fs'\\).readFileSync\\('app/components/InteractiveSchoolplaat.jsx', 'utf8'\\)\")",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(node --input-type=module --eval \"import\\('/home/jesse/project-veluwe/app/components/InteractiveSchoolplaat.jsx'\\)\")",
+      "Bash(npx next:*)"
+    ]
+  }
+}
