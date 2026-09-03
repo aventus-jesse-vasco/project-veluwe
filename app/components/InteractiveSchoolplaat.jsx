@@ -2,109 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Home, Star, Check, ArrowLeft, RotateCcw, Trophy, Flame } from "lucide-react";
+import { BOEREN_POIS } from "./pois";
 
 const IDLE_MS = 120_000;
 const STAR_SCORE = { 1: 50, 2: 100, 3: 150 };
 const NAME_KEY = "veluwe_last_name";
 const BOARD_KEY = "veluwe_leaderboard";
 
-const POIS = [
-  {
-    id: 1, label: "Grafheuvel", emoji: "⚱️", x: 62, y: 40, color: "#c0392b",
-    game: { type: "quiz", q: "Welke vorm heeft een grafheuvel?", opts: [
-      { e: "📐", label: "Plat",     correct: false },
-      { e: "⛰️", label: "Heuvel",   correct: true  },
-      { e: "🕳️", label: "Kuil",     correct: false },
-      { e: "🌀", label: "Spiraal",  correct: false },
-    ]},
-  },
-  {
-    id: 2, label: "Vuur & Rituelen", emoji: "🔥", x: 54, y: 66, color: "#ea580c",
-    game: { type: "order", title: "Zet het ritueel op volgorde", items: [
-      { e: "👥", label: "Samenkomen", order: 1 },
-      { e: "🌿", label: "Versieren",  order: 2 },
-      { e: "🎁", label: "Offers",     order: 3 },
-      { e: "🔥", label: "Vuur",       order: 4 },
-      { e: "🪦", label: "Heuvel",     order: 5 },
-    ]},
-  },
-  {
-    id: 3, label: "Kleding", emoji: "👕", x: 22, y: 50, color: "#7c3aed",
-    game: { type: "quiz", q: "Waar maakten ze kleding van?", opts: [
-      { e: "🧶", label: "Wol",     correct: true  },
-      { e: "🪨", label: "Steen",   correct: false },
-      { e: "💎", label: "Diamant", correct: false },
-      { e: "🧊", label: "IJs",     correct: false },
-    ]},
-  },
-  {
-    id: 4, label: "Sieraden", emoji: "💍", x: 14, y: 36, color: "#f59e0b",
-    game: { type: "match", title: "Koppel het sieraad", pairs: [
-      { a: { e: "💪", label: "Armband" }, b: { e: "🥉", label: "Brons" }},
-      { a: { e: "📿", label: "Ketting" }, b: { e: "🟠", label: "Barnsteen" }},
-      { a: { e: "📌", label: "Speld"   }, b: { e: "🦴", label: "Bot" }},
-      { a: { e: "👑", label: "Kroon"   }, b: { e: "🥇", label: "Goud" }},
-    ]},
-  },
-  {
-    id: 5, label: "Koken", emoji: "🍲", x: 38, y: 46, color: "#e64a19",
-    game: { type: "order", title: "Hoe kook je met stenen?", items: [
-      { e: "⛏️", label: "Kuil graven",      order: 1 },
-      { e: "🔥", label: "Stenen verhitten", order: 2 },
-      { e: "🪨", label: "Stenen in kuil",   order: 3 },
-      { e: "💧", label: "Water erop",       order: 4 },
-      { e: "🍖", label: "Voedsel koken",    order: 5 },
-    ]},
-  },
-  {
-    id: 6, label: "Klokbeker", emoji: "🏺", x: 22, y: 20, color: "#6a1b9a",
-    game: { type: "quiz", q: "Welke vorm heeft een klokbeker?", opts: [
-      { e: "🔔", label: "Klok",     correct: true  },
-      { e: "🥣", label: "Kom",      correct: false },
-      { e: "📦", label: "Vierkant", correct: false },
-      { e: "🥃", label: "Glas",     correct: false },
-    ]},
-  },
-  {
-    id: 7, label: "Zwaard", emoji: "⚔️", x: 8, y: 60, color: "#37474f",
-    game: { type: "quiz", q: "Waar is het zwaard van gemaakt?", opts: [
-      { e: "🥉", label: "Brons", correct: true  },
-      { e: "🪵", label: "Hout",  correct: false },
-      { e: "🪨", label: "Steen", correct: false },
-      { e: "🧊", label: "IJs",   correct: false },
-    ]},
-  },
-  {
-    id: 8, label: "Landschap", emoji: "🌳", x: 50, y: 16, color: "#388e3c",
-    game: { type: "quiz", q: "Wat is typisch Veluws?", opts: [
-      { e: "🌳", label: "Bos & hei", correct: true  },
-      { e: "🌊", label: "Zee",       correct: false },
-      { e: "🏔️", label: "Berg",      correct: false },
-      { e: "🏜️", label: "Woestijn",  correct: false },
-    ]},
-  },
-  {
-    id: 9, label: "Dieren", emoji: "🐕", x: 88, y: 72, color: "#00695c",
-    game: { type: "match", title: "Welk dier hoort waarbij?", pairs: [
-      { a: { e: "🦌", label: "Wild" },   b: { e: "🏹", label: "Jagen" }},
-      { a: { e: "🐄", label: "Tam"  },   b: { e: "🏠", label: "Boerderij" }},
-      { a: { e: "🐕", label: "Hond" },   b: { e: "🤝", label: "Vriend" }},
-      { a: { e: "🐗", label: "Zwijn" },  b: { e: "🌳", label: "Bos" }},
-    ]},
-  },
-  {
-    id: 10, label: "Afscheid", emoji: "🪦", x: 78, y: 38, color: "#546e7a",
-    game: { type: "quiz", q: "Wat ging mee in het graf?", opts: [
-      { e: "📿", label: "Sieraden", correct: true  },
-      { e: "📱", label: "Telefoon", correct: false },
-      { e: "💡", label: "Lamp",     correct: false },
-      { e: "📺", label: "TV",       correct: false },
-    ]},
-  },
-];
-
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
-export default function InteractiveSchoolplaat({ onBack }) {
+export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png", pois = BOEREN_POIS }) {
   const [active, setActive] = useState(null);
   const [results, setResults] = useState({}); // { [poiId]: { stars: 1-3, scored: int } }
   const [score, setScore] = useState(0);
@@ -121,7 +27,7 @@ export default function InteractiveSchoolplaat({ onBack }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const i = new window.Image();
-    i.src = "/Picture1.png";
+    i.src = image;
     i.onload = () => {
       if (i.naturalWidth && i.naturalHeight) {
         setImgRatio(i.naturalWidth / i.naturalHeight);
@@ -129,7 +35,7 @@ export default function InteractiveSchoolplaat({ onBack }) {
       setImgReady(true);
     };
     i.onerror = () => setImgReady(true);
-  }, []);
+  }, [image]);
 
   // Animated score ticker
   useEffect(() => {
@@ -205,13 +111,13 @@ export default function InteractiveSchoolplaat({ onBack }) {
     setTimeout(() => {
       setActive(null);
       const newResults = { ...results, [id]: { stars, scored: earned } };
-      if (Object.keys(newResults).length >= POIS.length) {
+      if (Object.keys(newResults).length >= pois.length) {
         setTimeout(() => setEnd(true), 600);
       }
     }, 1500);
   }
 
-  const activePoi = POIS.find((p) => p.id === active);
+  const activePoi = pois.find((p) => p.id === active);
   const completedCount = Object.keys(results).length;
 
   return (
@@ -354,10 +260,10 @@ export default function InteractiveSchoolplaat({ onBack }) {
 
       <div className="stage">
         <div className={`plaat ${!imgReady ? "idle" : ""}`} style={{ "--r": imgRatio }}>
-          <img src="/Picture1.png" alt="" draggable={false} />
+          <img src={image} alt="" draggable={false} />
           <div className="plaat-vignette" />
 
-          {POIS.map((p) => {
+          {pois.map((p) => {
             const res = results[p.id];
             const stars = res?.stars || 0;
             return (
@@ -396,7 +302,7 @@ export default function InteractiveSchoolplaat({ onBack }) {
             <Star size={24} fill="currentColor" className="star-i" />
             <span>{displayScore}</span>
             <span className="sep">|</span>
-            <span>{completedCount}/{POIS.length}</span>
+            <span>{completedCount}/{pois.length}</span>
           </div>
         </div>
       </div>
@@ -416,7 +322,7 @@ export default function InteractiveSchoolplaat({ onBack }) {
 
       {confettiKey > 0 && <Confetti key={confettiKey} />}
 
-      {end && <EndScreen score={score} results={results} pois={POIS} onReset={resetAll} onBack={onBack} />}
+      {end && <EndScreen score={score} results={results} pois={pois} onReset={resetAll} onBack={onBack} />}
     </div>
   );
 }

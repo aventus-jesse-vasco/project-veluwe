@@ -2,11 +2,12 @@
 
 import { useMemo } from "react";
 import { Lock, Trophy, Play, Sparkles } from "lucide-react";
+import { BOEREN_POIS, ROMEINEN_POIS } from "./pois";
 
 export const PLATEN = [
   { id: 1, label: "Landschap",     emoji: "🏔️", color: "#fbbf24", available: false },
-  { id: 2, label: "Eerste Boeren", emoji: "⚱️", color: "#e63946", available: true, image: "/Picture1.png" },
-  { id: 3, label: "Romeinen",      emoji: "🛡️", color: "#fb8500", available: false },
+  { id: 2, label: "Eerste Boeren", emoji: "⚱️", color: "#e63946", available: true, image: "/Picture1.png", pois: BOEREN_POIS },
+  { id: 3, label: "Romeinen",      emoji: "🛡️", color: "#fb8500", available: true, image: "/Romeinen.png", pois: ROMEINEN_POIS },
   { id: 4, label: "Middeleeuwen",  emoji: "🏰", color: "#dc2626", available: false },
   { id: 5, label: "Natuur",        emoji: "🌾", color: "#facc15", available: false },
   { id: 6, label: "Watermolens",   emoji: "💧", color: "#4cc9f0", available: false },
