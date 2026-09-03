@@ -2,47 +2,25 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #1a1a1a;
-
-  --font-playfair: "Playfair Display", serif;
-  --font-inter: "Inter", sans-serif;
-
-  /* Veluwe nature palette */
-  --forest-950: #0a1f0e;
-  --forest-900: #132b18;
-  --forest-800: #1a4726;
-  --forest-700: #1e5c30;
-  --forest-600: #2d6a4f;
-  --forest-500: #40916c;
-  --forest-400: #52b788;
-  --forest-300: #74c69d;
-  --forest-200: #95d5b2;
-  --forest-100: #b7e4c7;
-  --forest-50: #d8f3dc;
-
-  --heather-600: #7c3aed;
-  --heather-400: #a78bfa;
-  --heather-200: #ddd6fe;
-
-  --sand-700: #92400e;
-  --sand-500: #d97706;
-  --sand-300: #fcd34d;
-  --sand-100: #fef3c7;
+  --foreground: #171717;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
-}
-
-html {
-  scroll-behavior: smooth;
+  font-family: Arial, Helvetica, sans-serif;
 }
