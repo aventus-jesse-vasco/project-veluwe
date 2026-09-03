@@ -22,8 +22,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
-  /* Breedte van het verhaallijnen-menu naast de schoolplaat */
-  --spacing-88: 22rem;
 }
 
 * { box-sizing: border-box; }
