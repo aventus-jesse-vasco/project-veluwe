@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Home, Star, Check, ArrowLeft, RotateCcw, Trophy, Flame } from "lucide-react";
+import { Home, Star, Check, X, ArrowLeft, RotateCcw, Trophy, Flame, Play } from "lucide-react";
 import { BOEREN_POIS } from "./pois";
 
 const IDLE_MS = 120_000;
@@ -10,6 +10,9 @@ const NAME_KEY = "veluwe_last_name";
 const BOARD_KEY = "veluwe_leaderboard";
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
+/**
+ * @param {{ onBack?: () => void, image?: string, pois?: Array<Record<string, any>> }} props
+ */
 export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png", pois = BOEREN_POIS }) {
   const [active, setActive] = useState(null);
   const [results, setResults] = useState({}); // { [poiId]: { stars: 1-3, scored: int } }
@@ -21,6 +24,7 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
   const [end, setEnd] = useState(false);
   const [imgRatio, setImgRatio] = useState(4 / 3);
   const [imgReady, setImgReady] = useState(false);
+  const [watching, setWatching] = useState(false); // video speelt: idle-reset pauzeren
   const idleTimer = useRef(null);
 
   // Image ratio detection + preload
@@ -56,8 +60,12 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
     setActive(null); setResults({}); setScore(0); setDisplayScore(0); setStreak(0); setEnd(false);
   }, []);
 
-  // Idle reset
+  // Idle reset (niet tijdens het kijken van een video)
   useEffect(() => {
+    if (watching) {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      return;
+    }
     const arm = () => {
       if (idleTimer.current) clearTimeout(idleTimer.current);
       idleTimer.current = setTimeout(resetAll, IDLE_MS);
@@ -69,7 +77,7 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
       events.forEach((ev) => window.removeEventListener(ev, arm));
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
-  }, [resetAll]);
+  }, [resetAll, watching]);
 
   // ESC: close overlay first, then exit to startscherm
   useEffect(() => {
@@ -313,6 +321,7 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
           poi={activePoi}
           onDone={finishGame}
           onClose={() => setActive(null)}
+          onWatching={setWatching}
         />
       )}
 
@@ -328,8 +337,14 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
 }
 
 // ─── GAME OVERLAY ─────────────────────────────────────────────────────────────
-function GameOverlay({ poi, onDone, onClose }) {
+function GameOverlay({ poi, onDone, onClose, onWatching }) {
   const [stamp, setStamp] = useState(null); // "great" | "good" | "miss"
+  const [phase, setPhase] = useState(poi.video ? "video" : "game"); // eerst video, dan spel
+
+  useEffect(() => {
+    onWatching?.(phase === "video");
+    return () => onWatching?.(false);
+  }, [phase, onWatching]);
 
   const handleResult = ({ stars }) => {
     setStamp(stars === 3 ? "great" : stars >= 2 ? "good" : "miss");
@@ -345,7 +360,7 @@ function GameOverlay({ poi, onDone, onClose }) {
           backdrop-filter: blur(10px);
           display: flex; flex-direction: column;
           animation: overlayIn 0.32s cubic-bezier(0.34,1.4,0.64,1);
-          padding: 24px 20px 28px;
+          padding: 14px 20px 16px;
           color: #fff;
         }
         @keyframes overlayIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
@@ -364,26 +379,41 @@ function GameOverlay({ poi, onDone, onClose }) {
         @media (max-width: 540px) {
           .ov-close { padding: 12px 18px 12px 14px; font-size: 0.95rem; }
         }
-        .ov-head { text-align: center; padding: 28px 20px 22px; }
+        .ov-head { text-align: center; padding: 6px 20px 10px; flex: 0 0 auto; }
         .ov-emoji {
-          font-size: clamp(4rem, 9vw, 6.5rem);
-          margin-bottom: 6px;
+          font-size: clamp(2.4rem, 6vh, 4rem);
+          margin-bottom: 2px;
           filter: drop-shadow(0 4px 14px rgba(0,0,0,0.5));
           animation: emBob 2.2s ease-in-out infinite;
         }
         @keyframes emBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .ov-title {
           font-family: var(--font-display);
-          font-size: clamp(1.6rem, 4vw, 2.6rem);
+          font-size: clamp(1.2rem, 3.4vh, 2rem);
           font-weight: 700; margin: 0;
         }
         .ov-q {
           font-family: var(--font-display);
-          font-size: clamp(1.1rem, 2.6vw, 1.6rem);
-          font-weight: 700; margin: 10px 0 0;
+          font-size: clamp(0.9rem, 2.2vh, 1.25rem);
+          font-weight: 700; margin: 6px 0 0;
           color: #ffd089;
         }
-        .ov-body { flex: 1; display: grid; place-items: center; padding: 16px 0; }
+        /* flex + auto-margin i.p.v. grid place-items: centreert content, maar als het
+           (bij uitzondering) niet past valt het terug op boven uitlijnen i.p.v. half
+           wegvallen. Geen scroll: alles is op vh geschaald om altijd te passen. */
+        .ov-body {
+          flex: 1; min-height: 0;
+          display: flex; flex-direction: column; align-items: center;
+          overflow: hidden;
+          padding: 4px 4px;
+        }
+        .ov-body > * { margin: auto 0; }
+        /* Videofase: kleine kop, video gecentreerd in de resterende ruimte */
+        .ov-head--compact { padding: 4px 140px 6px; }
+        @media (max-width: 640px) { .ov-head--compact { padding: 54px 16px 6px; } }
+        .ov-head--compact .ov-title { font-size: clamp(1.2rem, 2.8vw, 1.8rem); }
+        .ov-head--compact .ov-q { margin-top: 4px; font-size: clamp(0.95rem, 2vw, 1.25rem); }
+        .ov-body--video { padding: 8px 4px 0; }
         .ov-stamp {
           position: fixed; top: 50%; left: 50%;
           transform: translate(-50%, -50%) scale(0);
@@ -407,17 +437,26 @@ function GameOverlay({ poi, onDone, onClose }) {
         <span>Terug</span>
       </button>
 
-      <div className="ov-head">
-        <div className="ov-emoji">{poi.emoji}</div>
-        <h2 className="ov-title">{poi.label}</h2>
-        {poi.game.q && <p className="ov-q">{poi.game.q}</p>}
-        {poi.game.title && <p className="ov-q">{poi.game.title}</p>}
-      </div>
+      {phase === "video" ? (
+        <div className="ov-head ov-head--compact">
+          <h2 className="ov-title">{poi.emoji} {poi.label}</h2>
+          <p className="ov-q">🎬 {poi.video.title}</p>
+        </div>
+      ) : (
+        <div className="ov-head">
+          <div className="ov-emoji">{poi.emoji}</div>
+          <h2 className="ov-title">{poi.label}</h2>
+          {poi.game.q && <p className="ov-q">{poi.game.q}</p>}
+          {poi.game.title && <p className="ov-q">{poi.game.title}</p>}
+        </div>
+      )}
 
-      <div className="ov-body">
-        {poi.game.type === "quiz"  && <Quiz  game={poi.game} onDone={handleResult} />}
-        {poi.game.type === "order" && <Order game={poi.game} onDone={handleResult} />}
-        {poi.game.type === "match" && <Match game={poi.game} onDone={handleResult} />}
+      <div className={`ov-body ${phase === "video" ? "ov-body--video" : ""}`}>
+        {phase === "video" && <VideoStep video={poi.video} onNext={() => setPhase("game")} />}
+        {phase === "game" && poi.game.type === "quiz"      && <Quiz      game={poi.game} onDone={handleResult} />}
+        {phase === "game" && poi.game.type === "order"     && <Order     game={poi.game} onDone={handleResult} />}
+        {phase === "game" && poi.game.type === "match"     && <Match     game={poi.game} onDone={handleResult} />}
+        {phase === "game" && poi.game.type === "multiquiz" && <MultiQuiz game={poi.game} onDone={handleResult} />}
       </div>
 
       {stamp && (
@@ -437,28 +476,173 @@ function GameOverlay({ poi, onDone, onClose }) {
   );
 }
 
+// ─── VIDEO ────────────────────────────────────────────────────────────────────
+function VideoStep({ video, onNext }) {
+  const src = `https://www.youtube-nocookie.com/embed/${video.youtubeId}?rel=0&modestbranding=1&playsinline=1`;
+  return (
+    <div className="vid-wrap">
+      <style>{`
+        .vid-wrap {
+          width: 100%; max-width: 1100px;
+          margin: 0 auto;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+        }
+        .vid-frame {
+          /* zo groot mogelijk, maar altijd passend naast kop (~110px) + knop (~70px) + marges */
+          width: min(100%, calc((100dvh - 300px) * 16 / 9));
+          margin: 0 auto;
+          aspect-ratio: 16 / 9;
+          border-radius: 24px; overflow: hidden;
+          background: #000;
+          border: 6px solid #fff;
+          box-shadow: 0 10px 0 rgba(0,0,0,0.25), 0 22px 40px rgba(0,0,0,0.32);
+        }
+        .vid-frame iframe { width: 100%; height: 100%; display: block; border: 0; }
+        .vid-sub {
+          font-family: var(--font-display); font-weight: 700;
+          font-size: clamp(0.95rem, 2vw, 1.2rem);
+          color: #ffd089; margin: 0; text-align: center;
+        }
+        .vid-next {
+          background: #06d6a0; color: #fff;
+          padding: 16px 30px 16px 24px; border-radius: 999px;
+          display: inline-flex; align-items: center; gap: 10px;
+          font-family: var(--font-display); font-weight: 700;
+          font-size: clamp(1.05rem, 2.4vw, 1.4rem);
+          box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 14px 28px rgba(0,0,0,0.4);
+          transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
+          animation: nextPulse 1.8s ease-in-out infinite;
+        }
+        .vid-next:hover { transform: translateY(-2px); }
+        .vid-next:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,0.3), 0 8px 14px rgba(0,0,0,0.4); }
+        @keyframes nextPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+      `}</style>
+      <div className="vid-frame">
+        <iframe
+          src={src}
+          title={video.title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
+      {video.subtitle && <p className="vid-sub">{video.subtitle}</p>}
+      <button className="vid-next" onClick={onNext}>
+        <Play size={22} strokeWidth={3} fill="currentColor" />
+        <span>Start de quiz</span>
+      </button>
+    </div>
+  );
+}
+
+// ─── MULTI QUIZ (meerdere vragen na elkaar) ───────────────────────────────────
+function MultiQuiz({ game, onDone }) {
+  const [idx, setIdx] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [mark, setMark] = useState(null); // "goed" | "bijna" tijdens de automatische overgang
+  const total = game.questions.length;
+  const current = game.questions[idx];
+  const isLast = idx + 1 >= total;
+
+  function handleAnswer({ stars }) {
+    if (mark) return;
+    const isCorrect = stars === 3;
+    setMark(isCorrect ? "goed" : "bijna");
+    const nCorrect = correct + (isCorrect ? 1 : 0);
+    setTimeout(() => {
+      setMark(null);
+      if (isLast) {
+        // Laatste vraag: sterren op basis van het aantal goede antwoorden.
+        const ratio = nCorrect / total;
+        onDone({ stars: ratio === 1 ? 3 : ratio >= 0.6 ? 2 : 1 });
+        return;
+      }
+      setCorrect(nCorrect);
+      setIdx((i) => i + 1);
+    }, 1200);
+  }
+
+  return (
+    <div className="mq">
+      <style>{`
+        .mq { width: 100%; display: flex; flex-direction: column; align-items: center; gap: min(14px, 1.6vh); }
+        .mq .opt-grid { --tile: min(190px, 19vh, calc((100vw - 100px) / 2)); gap: min(14px, 1.6vh); }
+        .mq-progress { display: flex; gap: 8px; align-items: center; }
+        .mq-dot {
+          width: 14px; height: 14px; border-radius: 50%;
+          background: rgba(255,255,255,0.3);
+          transition: background 0.2s, transform 0.2s;
+        }
+        .mq-dot.done { background: #06d6a0; }
+        .mq-dot.now  { background: #ffd089; transform: scale(1.3); }
+        .mq-count {
+          font-family: var(--font-display); font-weight: 700;
+          font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+          color: rgba(255,255,255,0.75); margin-left: 8px;
+        }
+        .mq-q {
+          font-family: var(--font-display); font-weight: 700;
+          font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+          color: #fff; text-align: center; margin: 0;
+          max-width: 680px;
+          animation: mqIn 0.3s cubic-bezier(0.34,1.4,0.64,1);
+        }
+        @keyframes mqIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .mq-mark {
+          position: fixed; top: 50%; left: 50%;
+          transform: translate(-50%, -50%) scale(0);
+          background: var(--mk-c);
+          color: #fff;
+          padding: 16px 30px; border-radius: 24px;
+          display: inline-flex; align-items: center; gap: 10px;
+          font-family: var(--font-display); font-weight: 700;
+          font-size: clamp(1.4rem, 4vw, 2.2rem);
+          box-shadow: 0 10px 0 rgba(0,0,0,0.3), 0 22px 50px rgba(0,0,0,0.5);
+          animation: markIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+          z-index: 150; pointer-events: none;
+        }
+        @keyframes markIn { 0% { transform: translate(-50%, -50%) scale(0) rotate(-14deg); } 60% { transform: translate(-50%, -50%) scale(1.15) rotate(-3deg); } 100% { transform: translate(-50%, -50%) scale(1) rotate(-4deg); } }
+      `}</style>
+      <div className="mq-progress">
+        {game.questions.map((_, i) => (
+          <span key={i} className={`mq-dot ${i < idx ? "done" : i === idx ? "now" : ""}`} />
+        ))}
+        <span className="mq-count">Vraag {idx + 1} van {total}</span>
+      </div>
+      <p className="mq-q" key={`q-${idx}`}>{current.q}</p>
+      <Quiz key={`quiz-${idx}`} game={current} onDone={handleAnswer} manual />
+      {mark && (
+        <div className="mq-mark" style={{ "--mk-c": mark === "goed" ? "#06d6a0" : "#e63946" }}>
+          {mark === "goed" ? <Check size={30} strokeWidth={4} /> : <X size={30} strokeWidth={4} />}
+          <span>{mark === "goed" ? "Goed!" : "Bijna!"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── QUIZ ─────────────────────────────────────────────────────────────────────
-function Quiz({ game, onDone }) {
+// manual=true: niet automatisch afronden; de ouder toont een "Volgende"-knop
+// en krijgt het antwoord direct via onDone.
+function Quiz({ game, onDone, manual = false }) {
   const [picked, setPicked] = useState(null);
   const [shuffled] = useState(() => [...game.opts].sort(() => Math.random() - 0.5));
   function pick(i) {
     if (picked !== null) return;
     setPicked(i);
     const correct = shuffled[i].correct;
+    if (manual) { onDone({ stars: correct ? 3 : 1 }); return; }
     setTimeout(() => onDone({ stars: correct ? 3 : 1 }), 850);
   }
   return (
     <div className="opt-grid">
       <style>{`
         .opt-grid {
+          --tile: min(240px, 24vh, calc((100vw - 100px) / 2));
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 240px));
-          gap: 22px;
+          grid-template-columns: repeat(2, minmax(0, var(--tile)));
+          gap: min(22px, 2.5vh);
           width: 100%; max-width: 580px;
           justify-content: center;
-        }
-        @media (max-width: 500px) {
-          .opt-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
         }
         .opt {
           aspect-ratio: 1;
@@ -469,14 +653,14 @@ function Quiz({ game, onDone }) {
           align-items: center; justify-content: center;
           gap: 8px;
           font-family: var(--font-display); font-weight: 700;
-          font-size: clamp(0.95rem, 2vw, 1.3rem);
+          font-size: clamp(0.8rem, min(2vw, 2.2vh), 1.3rem);
           box-shadow: 0 10px 0 rgba(0,0,0,0.25), 0 22px 40px rgba(0,0,0,0.32);
           transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), background 0.2s, border-color 0.2s;
         }
         .opt:hover { transform: translateY(-3px); }
         .opt:active { transform: translateY(5px) scale(0.96); box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 12px 24px rgba(0,0,0,0.3); }
         .opt-e {
-          font-size: clamp(2.6rem, 6vw, 4.4rem);
+          font-size: clamp(1.6rem, min(6vw, 7vh), 4.4rem);
           filter: drop-shadow(0 4px 10px rgba(0,0,0,0.22));
         }
         .opt.correct { background: #06d6a0; color: #fff; border-color: #06d6a0; animation: optBounce 0.5s cubic-bezier(0.34,1.56,0.64,1); }

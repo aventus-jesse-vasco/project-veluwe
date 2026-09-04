@@ -1,5 +1,7 @@
 // Punten (POI's) per schoolplaat. x/y zijn percentages van de afbeelding.
-// Elk punt heeft één spel: "quiz" (4 opties), "order" (volgorde) of "match" (koppelen).
+// Elk punt heeft één spel: "quiz" (4 opties), "order" (volgorde), "match" (koppelen)
+// of "multiquiz" (meerdere vragen na elkaar). Optioneel: "video" (YouTube) die eerst
+// wordt getoond voordat het spel begint.
 
 export const BOEREN_POIS = [
   {
@@ -186,11 +188,43 @@ export const ROMEINEN_POIS = [
   },
   {
     id: 10, label: "Landschap & dieren", emoji: "🦅", x: 71, y: 21, color: "#0369a1",
-    game: { type: "match", title: "Waar leeft het dier?", pairs: [
-      { a: { e: "🦅", label: "Buizerd" }, b: { e: "☁️", label: "Lucht"  }},
-      { a: { e: "🦌", label: "Hert"    }, b: { e: "🌳", label: "Bos"    }},
-      { a: { e: "🐗", label: "Zwijn"   }, b: { e: "🌰", label: "Eikels" }},
-      { a: { e: "🐑", label: "Schaap"  }, b: { e: "🌿", label: "Heide"  }},
+    // Eerst de wandelvlog over de Ermelose heide bekijken, daarna de quiz.
+    video: {
+      youtubeId: "gquwxevC2LM",
+      title: "Romeinse Marskamp Route",
+      subtitle: "Wandelvlog 5 · Ermelose heide",
+    },
+    game: { type: "multiquiz", title: "Quiz over het marskamp", questions: [
+      { q: "Bij welke plaats op de Veluwe is het bekendste Romeinse marskamp gevonden?", opts: [
+        { e: "🏕️", label: "Ermelo",    correct: true  },
+        { e: "🏙️", label: "Apeldoorn", correct: false },
+        { e: "🏰", label: "Arnhem",    correct: false },
+        { e: "🌲", label: "Ede",       correct: false },
+      ]},
+      { q: "Hoeveel Romeinse soldaten verbleven er in het marskamp?", opts: [
+        { e: "👥", label: "5.000 tot 6.000", correct: true  },
+        { e: "🧍", label: "Ongeveer 50",     correct: false },
+        { e: "👨‍👩‍👧", label: "Ongeveer 500",  correct: false },
+        { e: "🏟️", label: "Een miljoen",     correct: false },
+      ]},
+      { q: "In welke eeuw werd het marskamp aangelegd?", opts: [
+        { e: "2️⃣", label: "Tweede eeuw na Christus",  correct: true  },
+        { e: "🕰️", label: "Eerste eeuw voor Christus", correct: false },
+        { e: "🏰", label: "In de Middeleeuwen",       correct: false },
+        { e: "📅", label: "Vorig jaar",               correct: false },
+      ]},
+      { q: "Welke vorm hadden de grachten rond het marskamp?", opts: [
+        { e: "🔻", label: "Een V-vorm",   correct: true  },
+        { e: "🟦", label: "Een U-vorm",   correct: false },
+        { e: "⭕", label: "Een ronde vorm", correct: false },
+        { e: "📐", label: "Een vierkant", correct: false },
+      ]},
+      { q: "Hoeveel kilometer legde een legioen per dag af in vijandelijk gebied?", opts: [
+        { e: "🥾", label: "Ongeveer 15 km",  correct: true  },
+        { e: "🐌", label: "Ongeveer 1 km",   correct: false },
+        { e: "🚗", label: "Ongeveer 100 km", correct: false },
+        { e: "🚀", label: "Ongeveer 500 km", correct: false },
+      ]},
     ]},
   },
 ];
