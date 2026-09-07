@@ -131,7 +131,7 @@ export const ROMEINEN_POIS = [
     ]},
   },
   {
-    id: 4, label: "Kleding & uitrusting", emoji: "🪖", x: 82, y: 36, color: "#b45309",
+    id: 4, label: "Kleding & uitrusting", emoji: "👚", x: 82, y: 36, color: "#b45309",
     game: { type: "match", title: "Waar draagt de soldaat het?", pairs: [
       { a: { e: "🪖", label: "Helm"     }, b: { e: "🧠", label: "Hoofd"  }},
       { a: { e: "🛡️", label: "Schild"   }, b: { e: "💪", label: "Arm"    }},
@@ -140,7 +140,7 @@ export const ROMEINEN_POIS = [
     ]},
   },
   {
-    id: 5, label: "Het Romeinse leger", emoji: "🦅", x: 61, y: 43, color: "#7f1d1d",
+    id: 5, label: "Het Romeinse leger", emoji: "🪖", x: 61, y: 43, color: "#7f1d1d",
     game: { type: "quiz", q: "Hoe heet een groep van wel 5000 Romeinse soldaten?", opts: [
       { e: "🦅", label: "Legioen",  correct: true  },
       { e: "🎒", label: "Klas",     correct: false },

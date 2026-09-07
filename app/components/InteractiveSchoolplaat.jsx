@@ -144,9 +144,15 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
           display: grid; place-items: center;
         }
         .plaat {
+          /* Doos heeft exact de beeldverhouding -> x/y percentages van de POI's
+             komen 1:1 overeen met de afbeelding, op elk schermformaat. */
+          --plaat-w: min(100vw, 100dvh * var(--r));
+          --plaat-h: min(100dvh, 100vw / var(--r));
+          /* POI schaalt mee met de kaart (kleinste as), met een boven- en ondergrens. */
+          --poi: clamp(30px, min(var(--plaat-w) * 0.075, var(--plaat-h) * 0.1), 92px);
           position: relative;
-          width: min(100vw, 100dvh * var(--r));
-          height: min(100dvh, 100vw / var(--r));
+          width: var(--plaat-w);
+          height: var(--plaat-h);
           opacity: 0;
           animation: plaatIn 0.6s 0.05s cubic-bezier(0.34,1.4,0.64,1) forwards;
         }
@@ -154,7 +160,7 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
         @keyframes plaatIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
         .plaat img {
           width: 100%; height: 100%;
-          object-fit: cover;
+          object-fit: fill;
           display: block;
           pointer-events: none;
         }
@@ -207,12 +213,13 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
         .poi {
           position: absolute;
           transform: translate(-50%, -50%);
-          width: 92px; height: 92px;
+          width: var(--poi); height: var(--poi);
           border-radius: 50%;
           background: var(--c);
-          border: 6px solid #fff;
+          border: max(2px, calc(var(--poi) * 0.065)) solid #fff;
           display: grid; place-items: center;
-          font-size: 2.8rem;
+          font-size: calc(var(--poi) * 0.42);
+          line-height: 1;
           color: #fff;
           z-index: 30;
           box-shadow: 0 8px 0 rgba(0,0,0,0.32), 0 18px 36px rgba(0,0,0,0.5);
@@ -228,17 +235,21 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
         .poi.done-1 { background: #fb8500; }
         .poi-stars {
           position: absolute;
-          top: -10px; right: -12px;
+          top: calc(var(--poi) * -0.11); right: calc(var(--poi) * -0.13);
           background: #fff;
           border-radius: 999px;
-          padding: 4px 8px;
-          display: flex; gap: 2px;
+          padding: calc(var(--poi) * 0.045) calc(var(--poi) * 0.085);
+          display: flex; gap: calc(var(--poi) * 0.022);
           box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
-        .poi-stars svg { color: #ffb703; }
+        .poi-stars svg {
+          color: #ffb703;
+          width: max(7px, calc(var(--poi) * 0.12));
+          height: max(7px, calc(var(--poi) * 0.12));
+        }
         @keyframes poiPulse {
           0%, 100% { box-shadow: 0 8px 0 rgba(0,0,0,0.32), 0 18px 36px rgba(0,0,0,0.5), 0 0 0 0 var(--c); }
-          50%      { box-shadow: 0 8px 0 rgba(0,0,0,0.32), 0 18px 36px rgba(0,0,0,0.5), 0 0 0 22px transparent; }
+          50%      { box-shadow: 0 8px 0 rgba(0,0,0,0.32), 0 18px 36px rgba(0,0,0,0.5), 0 0 0 calc(var(--poi) * 0.24) transparent; }
         }
         .pop {
           position: fixed; left: 50%; top: 50%;
@@ -258,8 +269,6 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
           100% { opacity: 0; transform: translate(-50%, -130%) scale(0.85); }
         }
         @media (max-width: 700px) {
-          .poi { width: 68px; height: 68px; font-size: 2.1rem; border-width: 4px; }
-          .poi-stars { padding: 2px 6px; }
           .hud { top: 14px; left: 14px; right: 14px; }
           .hud-btn { width: 52px; height: 52px; }
           .hud-pill { padding: 10px 16px; font-size: 1.05rem; gap: 8px; }
