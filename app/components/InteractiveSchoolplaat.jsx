@@ -216,12 +216,13 @@ export default function InteractiveSchoolplaat({ onBack, image = "/Picture1.png"
           color: #fff;
           z-index: 30;
           box-shadow: 0 8px 0 rgba(0,0,0,0.32), 0 18px 36px rgba(0,0,0,0.5);
-          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s ease;
           animation: poiPulse 2.2s ease-in-out infinite;
+          opacity: 0.68;
         }
-        .poi:hover { transform: translate(-50%, -50%) scale(1.08); }
-        .poi:active { transform: translate(-50%, -50%) scale(0.92); }
-        .poi.done { animation: none; opacity: 0.92; }
+        .poi:hover { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+        .poi:active { transform: translate(-50%, -50%) scale(0.92); opacity: 1; }
+        .poi.done { animation: none; opacity: 0.55; }
         .poi.done-3 { background: #06d6a0; }
         .poi.done-2 { background: #ffb703; }
         .poi.done-1 { background: #fb8500; }
