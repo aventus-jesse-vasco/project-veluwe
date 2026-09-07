@@ -112,7 +112,7 @@ export const ROMEINEN_POIS = [
     ]},
   },
   {
-    id: 2, label: "Verdediging van het kamp", emoji: "🛡️", x: 59, y: 76, color: "#374151",
+    id: 2, label: "Verdediging van het kamp", emoji: "🛡️", x: 70, y: 60, color: "#374151",
     game: { type: "order", title: "Zo verdedig je het kamp", items: [
       { e: "📏", label: "Kamp uitmeten",   order: 1 },
       { e: "⛏️", label: "Gracht graven",   order: 2 },
